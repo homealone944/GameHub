@@ -1,38 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameHub placeholder</title>
-    <style>
-        body {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-        }
-        h1 {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            background: -webkit-linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        p {
-            font-size: 1.5rem;
-            color: #ccc;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameHub | Play Anywhere</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./styles/global.css">
 </head>
 <body>
-    <div>
-        <h1>GameHub</h1>
-        <p>Coming soon...</p>
+  
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-logo">
+      <span class="text-gradient logo-text">GameHub</span>
     </div>
+    <div class="header-user" id="profile-btn">
+      <span id="display-username">Guest</span>
+      <div class="user-avatar">👤</div>
+    </div>
+  </header>
+
+  <main class="container page-content">
+    
+    <!-- Search & Filter Area -->
+    <section class="toolbar">
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search games...">
+      </div>
+      
+      <div class="filter-pills" id="filter-container">
+        <button class="pill active" data-filter="All">All</button>
+        <button class="pill" data-filter="Local">Local</button>
+        <button class="pill" data-filter="Online">Online</button>
+        <button class="pill" data-filter="Solo">Solo</button>
+        <button class="pill" data-filter="Multiplayer">Multiplayer</button>
+      </div>
+    </section>
+    
+    <!-- Dynamic Grid injected by hub.js -->
+    <div class="game-grid" id="game-grid">
+      <!-- Cards rendered here -->
+    </div>
+  </main>
+
+  <!-- User Profile Modal -->
+  <div id="profile-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Edit User Profile</h2>
+      <button class="btn-close" id="btn-close-profile">&times;</button>
+      
+      <div class="modal-actions mt-2">
+        <input type="text" id="input-username" placeholder="Enter your username" maxlength="15" class="w-100">
+        <button id="btn-save-profile" class="btn btn-mint mt-1 w-100">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Online Join/Create Modal -->
+  <div id="online-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="modal-game-title">Play Game Online</h2>
+      <button class="btn-close" id="btn-close-online">&times;</button>
+      
+      <div class="modal-actions mt-2">
+        <button id="modal-btn-host" class="btn btn-coral w-100">Create New Lobby</button>
+        <div class="divider"><span>OR</span></div>
+        <div class="join-section w-100">
+          <input type="text" id="modal-input-lobby" placeholder="Enter Lobby Code" maxlength="4">
+          <button id="modal-btn-join" class="btn btn-mint">Join</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/notify.js"></script>
+  <script src="./js/hub.js"></script>
 </body>
 </html>

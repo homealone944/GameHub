@@ -1,0 +1,258 @@
+/* Codenames Duet Styles */
+
+.hidden { display: none !important; }
+
+.duet-container {
+  max-width: 1200px;
+}
+
+
+
+.highlight {
+  color: var(--accent-coral);
+  font-weight: bold;
+}
+
+.duet-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.board-wrapper {
+  flex: 2;
+  min-width: 300px;
+}
+
+.duet-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 10px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+}
+
+.card {
+  aspect-ratio: 4/3;
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  transition: transform 0.3s, background-color 0.3s;
+  user-select: none;
+  text-align: center;
+  padding: 5px;
+  word-break: break-word;
+  border: 2px solid transparent;
+}
+
+.card:hover:not(.revealed) {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.card.revealed {
+  cursor: default;
+  color: #fff;
+  transform: scale(0.98);
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.5);
+}
+
+/* Card Types */
+.card.revealed.green { background-color: #38bdf8; } /* Agent (Green in standard but blue here for contrast?) Actually Duet standard is Green */
+.card.revealed.green { background-color: #4ade80; color: #064e3b; } 
+.card.revealed.black { background-color: #1f2937; color: #f87171; border: 2px solid #ef4444; } /* Assassin */
+.card.revealed.bystander { background-color: #d1d5db; color: #4b5563; } /* Innocent bystander */
+.card.partial-bystander { position: relative; } /* Don't change background, just host the token absolute */
+
+.bystander-token {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.8);
+}
+.bystander-token.p1 { bottom: 4px; left: 4px; background-color: #3b82f6; } /* Royal Blue */
+.bystander-token.p2 { bottom: 4px; right: 4px; background-color: #a855f7; } /* Deep Purple */
+
+/* Intel Phase Info */
+.intel-phase-board .card { cursor: default; }
+.intel-phase-board .card:hover:not(.revealed) { transform: none; border-color: transparent; }
+.card.intel-green { border: 2px solid #4ade80 !important; }
+.card.intel-black { border: 2px solid #ef4444 !important; }
+
+#game-over-banner {
+  background: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+#game-over-banner h2 { margin-bottom: 0.5rem; letter-spacing: 2px; }
+.win-text { color: var(--accent-mint); }
+.lose-text { color: var(--accent-coral); }
+
+/* Side Panel */
+.side-panel {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.key-card-container, .clue-log-container {
+  background-color: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+
+.key-card-container h3, .clue-log-container h3 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 0.5rem;
+}
+
+.clue-log {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-size: 0.9rem;
+  padding-left: 10px;
+}
+
+.log-entry {
+  position: relative;
+  padding-left: 20px;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.log-entry::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  background-color: var(--accent-coral);
+  border-radius: 50%;
+}
+
+.log-entry.player1-log::before { background-color: #3b82f6; }
+.log-entry.player2-log::before { background-color: #a855f7; }
+
+.log-entry .log-player { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
+.log-entry .log-clue { font-weight: 800; font-size: 1.2rem; color: #fff; text-transform: uppercase; display: block; margin-top: 5px; }
+
+.log-guesses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 10px;
+}
+
+.guess-pill {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+.guess-green { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid #4ade80; }
+.guess-bystander { background-color: rgba(255, 255, 255, 0.1); color: var(--text-secondary); border: 1px solid transparent; }
+.guess-assassin { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+
+/* Clue Input */
+.clue-input-area {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+.clue-input-area input {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  text-transform: uppercase;
+}
+
+/* Animations for penalties */
+@keyframes shakeGrid {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px) rotate(-1deg); }
+  40% { transform: translateX(10px) rotate(1deg); }
+  60% { transform: translateX(-10px) rotate(-1deg); }
+  80% { transform: translateX(10px) rotate(1deg); }
+}
+.shake-board {
+  animation: shakeGrid 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.bystander-shake-x {
+  position: relative;
+  overflow: visible;
+}
+.bystander-shake-x::after {
+  content: '❌';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 3rem;
+  z-index: 100;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+@keyframes popIn {
+  100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+}
+
+/* Modals */
+.overlay-mask {
+  background: var(--bg-primary); /* completely opaque so they can't peek! */
+}
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.settings-group label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.settings-group input, .settings-group textarea {
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+}
+.text-left { text-align: left; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .duet-board {
+    gap: 4px;
+    padding: 4px;
+  }
+  .card {
+    font-size: 0.7rem;
+    padding: 2px;
+  }
+}

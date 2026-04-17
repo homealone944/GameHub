@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe | GameHub</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../styles/global.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Standard Game Navigation -->
+  <input type="checkbox" id="nav-toggle" class="nav-toggle">
+  <label for="nav-toggle" class="menu-overlay"></label>
+  <nav class="game-top-nav">
+    <div class="nav-left">
+      <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">GameHub</a>
+      <label for="nav-toggle" class="nav-toggle-label">☰</label>
+    </div>
+    <div class="nav-center">
+      <h2 class="nav-game-title">Tic-Tac-Toe</h2>
+    </div>
+    <div class="nav-right">
+      <label for="nav-toggle" class="close-menu-label">&times;</label>
+      <button id="btn-rules" class="btn btn-sm btn-primary">📖 Rules</button>
+      <button id="btn-settings" class="btn btn-sm btn-primary">⚙️ Settings</button>
+      <button id="btn-lobby" class="btn btn-sm btn-primary hidden">🌐 Lobby</button>
+    </div>
+  </nav>
+
+  <main class="container" style="padding-top: 80px;">
+
+    <!-- Active Game -->
+    <div id="ui-game">
+      <div class="status-bar-visual">
+        <div class="status-left">
+           <div class="status-label">STATUS</div>
+           <div id="turn-indicator" class="status-value">X'S TURN</div>
+        </div>
+        <div id="lobby-info" class="status-right hidden" style="border-left: 1px solid rgba(255,255,255,0.2);">
+           <div class="status-label">LOBBY</div>
+           <div id="lobby-code-display" class="status-value highlight" style="font-size: 1rem;"></div>
+        </div>
+      </div>
+
+      <div class="board" id="board">
+        <div class="cell" data-index="0"></div>
+        <div class="cell" data-index="1"></div>
+        <div class="cell" data-index="2"></div>
+        <div class="cell" data-index="3"></div>
+        <div class="cell" data-index="4"></div>
+        <div class="cell" data-index="5"></div>
+        <div class="cell" data-index="6"></div>
+        <div class="cell" data-index="7"></div>
+        <div class="cell" data-index="8"></div>
+      </div>
+
+      <div class="glass-panel mt-2">
+        <button id="btn-rematch" class="btn btn-coral hidden">Rematch</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rules Modal -->
+  <div id="rules-modal" class="modal hidden">
+    <div class="modal-content text-left">
+      <h2>How to Play Tic-Tac-Toe</h2>
+      <button class="btn-close" id="btn-close-rules">&times;</button>
+      
+      <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
+        <p>A classic game for two players!</p>
+        <ul style="padding-left: 1rem; margin-top: 0.5rem;">
+          <li>Players take turns placing their mark ('X' or 'O') in an empty square on the 3x3 grid.</li>
+          <li>The first player to align 3 of their marks horizontally, vertically, or diagonally wins the game.</li>
+          <li>If all 9 squares are filled and no player has 3 in a row, the game ends in a Draw.</li>
+        </ul>
+      </div>
+      <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
+    </div>
+  </div>
+
+  <script src="../../js/notify.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
