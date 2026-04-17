@@ -1,0 +1,105 @@
+/* Dots & Boxes Styles */
+
+.hidden { display: none !important; }
+
+.dab-wrapper {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto;
+  user-select: none;
+  background-color: rgba(255, 255, 255, 0.02);
+  padding: 30px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+}
+
+.dab-board {
+  position: relative;
+  margin: 0 auto;
+}
+
+/* Dots */
+.dab-dot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background-color: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Lines */
+.dab-line {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  z-index: 5;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.dab-line.horizontal {
+  height: 16px;
+  transform: translate(0, -50%);
+}
+
+.dab-line.vertical {
+  width: 16px;
+  transform: translate(-50%, 0);
+}
+
+/* Interactive Line Hover */
+.dab-line:hover:not(.claimed) {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Claimed Lines */
+.dab-line.claimed.p1 {
+  background-color: #3b82f6; /* Blue */
+  box-shadow: 0 0 8px #3b82f6;
+  cursor: default;
+}
+
+.dab-line.claimed.p2 {
+  background-color: #ef4444; /* Red */
+  box-shadow: 0 0 8px #ef4444;
+  cursor: default;
+}
+
+/* Boxes */
+.dab-box {
+  position: absolute;
+  z-index: 1;
+  background-color: transparent;
+  transition: background-color 0.3s ease;
+  transform-origin: center;
+}
+
+/* When a box is captured */
+.dab-box.captured.p1 {
+  background-color: rgba(59, 130, 246, 0.4);
+}
+.dab-box.captured.p2 {
+  background-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Specific styling for the capture animation */
+.dab-box.captured::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 2rem;
+  font-weight: 900;
+  color: rgba(255,255,255,0.8);
+  animation: popLetter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.dab-box.captured.p1::after { content: '1'; }
+.dab-box.captured.p2::after { content: '2'; }
+
+@keyframes popLetter {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}

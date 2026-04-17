@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dots & Boxes | GameHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../styles/global.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Standard Game Navigation -->
+  <input type="checkbox" id="nav-toggle" class="nav-toggle">
+  <label for="nav-toggle" class="menu-overlay"></label>
+  <nav class="game-top-nav">
+    <div class="nav-left">
+      <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">GameHub</a>
+      <label for="nav-toggle" class="nav-toggle-label">☰</label>
+    </div>
+    <div class="nav-center">
+      <h2 class="nav-game-title">Dots & Boxes</h2>
+    </div>
+    <div class="nav-right">
+      <label for="nav-toggle" class="close-menu-label">&times;</label>
+      <button id="btn-rules" class="btn btn-sm btn-primary">📖 Rules</button>
+      <button id="btn-settings" class="btn btn-sm btn-primary">⚙️ Settings</button>
+      <button id="btn-rematch-nav" class="btn btn-sm btn-primary hidden">🔄 New Game</button>
+    </div>
+  </nav>
+
+  <main class="container page-content" style="margin-top: 80px; text-align: center;">
+
+    <div class="status-bar-visual" style="max-width: 600px; margin: 0 auto 2rem auto;">
+      <div class="status-left">
+         <div class="status-label">STATUS</div>
+         <div id="turn-indicator" class="status-value">P1 TURN</div>
+      </div>
+      <div class="status-center">
+         <div class="status-label">P1 SCORE</div>
+         <div id="score-p1" class="status-value highlight" style="color: #3b82f6;">0</div>
+      </div>
+      <div class="status-center">
+         <div class="status-label text-right">P2 SCORE</div>
+         <div id="score-p2" class="status-value highlight" style="color: #ef4444;">0</div>
+      </div>
+    </div>
+
+    <!-- The actual game board container -->
+    <div class="dab-wrapper">
+       <div id="board" class="dab-board">
+          <!-- DOTS and LINES get built here via JS -->
+       </div>
+    </div>
+    
+    <button id="btn-rematch" class="btn btn-mint mt-2 hidden">🔄 Play Again</button>
+
+  </main>
+
+  <!-- Rules Modal -->
+  <div id="rules-modal" class="modal hidden">
+    <div class="modal-content text-left">
+      <h2>How to Play Dots & Boxes</h2>
+      <button class="btn-close" id="btn-close-rules">&times;</button>
+      
+      <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
+        <ul style="padding-left: 1rem; margin-top: 0.5rem;">
+          <li>Players alternate turns joining two horizontally or vertically adjacent dots with a line.</li>
+          <li>A player who completes the fourth side of a 1x1 Box earns one point and takes another turn!</li>
+          <li>The game ends when no more lines can be placed. The player with the most boxes wins!</li>
+        </ul>
+      </div>
+      <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content text-left">
+      <h2>Game Settings</h2>
+      <button class="btn-close" id="btn-close-settings">&times;</button>
+      
+      <div class="settings-group mt-1">
+        <label>Board Columns (Dots)</label>
+        <input type="number" id="input-cols" min="3" max="15" value="5">
+      </div>
+      
+      <div class="settings-group mt-1">
+        <label>Board Rows (Dots)</label>
+        <input type="number" id="input-rows" min="3" max="15" value="5">
+      </div>
+
+      <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+        Note: Changing grid size will restart the game!
+      </div>
+
+      <div class="modal-actions mt-2" style="display: flex; gap: 1rem;">
+        <button id="btn-save-settings" class="btn btn-mint flex-1">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../js/notify.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

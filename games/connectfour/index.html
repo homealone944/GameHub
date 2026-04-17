@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect Four | GameHub</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../styles/global.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Standard Game Navigation -->
+  <input type="checkbox" id="nav-toggle" class="nav-toggle">
+  <label for="nav-toggle" class="menu-overlay"></label>
+  <nav class="game-top-nav">
+    <div class="nav-left">
+      <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">GameHub</a>
+      <label for="nav-toggle" class="nav-toggle-label">☰</label>
+    </div>
+    <div class="nav-center">
+      <h2 class="nav-game-title">Connect Four</h2>
+    </div>
+    <div class="nav-right">
+      <label for="nav-toggle" class="close-menu-label">&times;</label>
+      <button id="btn-rules" class="btn btn-sm btn-primary">📖 Rules</button>
+      <button id="btn-settings" class="btn btn-sm btn-primary">⚙️ Settings</button>
+      <button id="btn-lobby" class="btn btn-sm btn-primary hidden">🌐 Lobby</button>
+    </div>
+  </nav>
+
+  <main class="container" style="padding-top: 80px;">
+
+    <!-- Active Game -->
+    <div id="ui-game">
+      <div class="status-bar-visual">
+        <div class="status-left">
+           <div class="status-label">STATUS</div>
+           <div id="turn-indicator" class="status-value">RED'S TURN</div>
+        </div>
+        <div id="lobby-info" class="status-right hidden" style="border-left: 1px solid rgba(255,255,255,0.2);">
+           <div class="status-label">LOBBY</div>
+           <div id="lobby-code-display" class="status-value highlight" style="font-size: 1rem;"></div>
+        </div>
+      </div>
+
+      <div class="board-container">
+        <!-- 7 columns to click on for dropping -->
+        <div class="click-zones" id="click-zones">
+            <div class="click-col" data-col="0"></div>
+            <div class="click-col" data-col="1"></div>
+            <div class="click-col" data-col="2"></div>
+            <div class="click-col" data-col="3"></div>
+            <div class="click-col" data-col="4"></div>
+            <div class="click-col" data-col="5"></div>
+            <div class="click-col" data-col="6"></div>
+        </div>
+        
+        <!-- The visual board -->
+        <div class="c4-board" id="board">
+          <!-- 6 rows x 7 cols injected via JS -->
+        </div>
+      </div>
+
+      <div class="glass-panel mt-2">
+        <button id="btn-rematch" class="btn btn-coral hidden">Rematch</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Rules Modal -->
+  <div id="rules-modal" class="modal hidden">
+    <div class="modal-content text-left">
+      <h2>How to Play Connect Four</h2>
+      <button class="btn-close" id="btn-close-rules">&times;</button>
+      
+      <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
+        <ul style="padding-left: 1rem; margin-top: 0.5rem;">
+          <li>Players alternate turns dropping their colored discs (Red or Yellow) into one of the 7 columns.</li>
+          <li>The disc will fall to the lowest available space within the column.</li>
+          <li>The first player to form a horizontal, vertical, or diagonal line of four of their own discs wins!</li>
+          <li>If the board fills up before either player achieves 4-in-a-row, the game is a Draw.</li>
+        </ul>
+      </div>
+      <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
+    </div>
+  </div>
+
+  <script src="../../js/notify.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

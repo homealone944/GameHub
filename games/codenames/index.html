@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codenames Duet | GameHub</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../styles/global.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Standard Game Navigation -->
+  <input type="checkbox" id="nav-toggle" class="nav-toggle">
+  <label for="nav-toggle" class="menu-overlay"></label>
+  <nav class="game-top-nav">
+    <div class="nav-left">
+      <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">GameHub</a>
+      <label for="nav-toggle" class="nav-toggle-label">☰</label>
+    </div>
+    <div class="nav-center">
+      <h2 class="nav-game-title">Codenames</h2>
+    </div>
+    <div class="nav-right">
+      <label for="nav-toggle" class="close-menu-label">&times;</label>
+      <button id="btn-rules" class="btn btn-sm btn-primary">📖 Rules</button>
+      <button id="btn-settings" class="btn btn-sm btn-primary">⚙️ Settings</button>
+      <button id="btn-nav-rematch" class="btn btn-sm btn-primary hidden">🔄 New Game</button>
+    </div>
+  </nav>
+
+  <main class="container duet-container" style="padding-top: 80px;">
+
+
+    <!-- Game UI -->
+    <div id="ui-game">
+      <div class="status-bar-visual">
+        <div class="status-left">
+           <div class="status-label">STATUS</div>
+           <div id="active-player-display" class="status-value">PLAYER 1: INTEL</div>
+        </div>
+        <div class="status-center" style="align-items: center;">
+           <div class="status-label">TURNS</div>
+           <div class="status-value" id="turns-dots">
+              <!-- Number injected via JS -->
+           </div>
+        </div>
+        <div class="status-divider"></div>
+        <div class="status-right">
+           <div class="status-label">AGENTS</div>
+           <div class="status-value"><span id="agents-found">0</span><span class="muted">/15</span></div>
+        </div>
+      </div>
+
+      <div class="duet-layout">
+        
+        <!-- The Board -->
+        <div class="board-wrapper">
+          <div class="duet-board" id="board">
+            <!-- 25 cards injected via JS -->
+          </div>
+          
+          <div class="game-controls mt-2">
+             <div id="clue-input-area" class="clue-input-area hidden">
+                <input type="text" id="clue-word" placeholder="Clue word">
+                <input type="number" id="clue-num" placeholder="#" min="0" max="9" style="width: 60px;">
+                <button id="btn-give-clue" class="btn btn-mint">Give Clue</button>
+             </div>
+             <button id="btn-end-turn" class="btn btn-coral mt-1 hidden">End Turn</button>
+             <button id="btn-start-game" class="btn btn-primary mt-1 w-100">Start Game</button>
+             <div id="game-over-banner" class="hidden text-center mt-2">
+                 <h2 id="game-over-text" style="text-transform: uppercase;">VICTORY</h2>
+                 <button id="btn-banner-rematch" class="btn btn-primary mt-1">New Game</button>
+             </div>
+          </div>
+        </div>
+
+        <!-- Side Panel: Log -->
+        <div class="side-panel">
+
+           <div class="clue-log-container">
+              <h3>Clue Log</h3>
+              <div class="clue-log" id="clue-log">
+                <!-- Log entries here -->
+              </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Pass Device Overlay -->
+  <div id="pass-device-overlay" class="modal hidden overlay-mask">
+    <div class="modal-content">
+      <h2>Pass the Device!</h2>
+      <p>Hand the device to <span id="next-player-name" class="highlight">Player 2</span>.</p>
+      <div id="pass-clue-display" class="hidden mt-1" style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 6px;">
+         <strong>Clue:</strong> <span id="pass-clue-text" class="highlight" style="font-size: 1.2rem; text-transform: uppercase;">NONE</span>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 1rem;">Don't let the other person see!</p>
+      <button id="btn-ready" class="btn btn-mint mt-2 w-100">I'm ready.</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content text-left">
+      <h2>Game Settings</h2>
+      <button class="btn-close" id="btn-close-settings">&times;</button>
+      
+      <div class="settings-group mt-2">
+        <label>Player 1 Name</label>
+        <input type="text" id="input-p1-name" value="Player 1" maxlength="15" class="w-100">
+      </div>
+
+      <div class="settings-group mt-2">
+        <label>Player 2 Name</label>
+        <input type="text" id="input-p2-name" value="Player 2" maxlength="15" class="w-100">
+      </div>
+
+      <div class="settings-group mt-2">
+        <label>Turns (3 to 11)</label>
+        <input type="number" id="input-tokens" value="9" min="3" max="11" class="w-100">
+      </div>
+
+      <div class="settings-group mt-2">
+        <label>Custom Word List (comma separated)</label>
+        <textarea id="input-words" rows="5" class="w-100" placeholder="APPLE, CAR, TREE..."></textarea>
+      </div>
+
+      <button id="btn-save-settings" class="btn btn-mint mt-2 w-100">Save</button>
+      <button id="btn-settings-rematch" class="btn btn-primary mt-1 w-100">Save & Restart Game</button>
+    </div>
+  </div>
+
+  <!-- Rules Modal -->
+  <div id="rules-modal" class="modal hidden">
+    <div class="modal-content text-left" style="max-height: 80vh; overflow-y: auto;">
+      <h2>How to Play Codenames Duet</h2>
+      <button class="btn-close" id="btn-close-rules">&times;</button>
+      
+      <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
+        <p>You and your partner are on a secret mission. You must correctly identify all 15 green agent words on the board before you run out of turns!</p>
+        <br>
+        <p><strong>The Catch:</strong> Each player is only looking at their specific half of the Key Card via the "INTEL" phase. Your half shows you 9 green words you need to give clues for, and 3 black Assassin words!</p>
+        <ul style="padding-left: 1rem; margin-top: 0.5rem;">
+          <li>A <strong>Clue</strong> must be exactly one word and one number (the number of words it relates to).</li>
+          <li>If you guess a <strong>Green Agent</strong> correctly, you can keep guessing or pass.</li>
+          <li>If you guess a <strong>Grey Bystander</strong>, your turn immediately ends, and it costs a turn token.</li>
+          <li>If you hit a <strong>Black Assassin</strong>, the game is instantly over and you both lose!</li>
+        </ul>
+        <br>
+        <p>Work together, don't look at the other person's Intel, and find all 15 agents to win!</p>
+      </div>
+      <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
+    </div>
+  </div>
+
+  <script src="../../js/notify.js"></script>
+  <script src="words.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

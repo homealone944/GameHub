@@ -1,0 +1,109 @@
+/* Tic-Tac-Toe Specific Styles */
+
+.hidden {
+  display: none !important;
+}
+
+.menu-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.join-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.join-section input {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  text-transform: uppercase;
+}
+
+.join-section input:focus {
+  border-color: var(--accent-mint);
+}
+
+.highlight {
+  color: var(--accent-coral);
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+/* The Board */
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 100px);
+  grid-template-rows: repeat(3, 100px);
+  gap: 10px;
+  margin: 0 auto;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 10px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  width: max-content;
+}
+
+.cell {
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3.5rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color var(--transition-speed), transform var(--transition-speed);
+  user-select: none;
+}
+
+.cell:hover:not(.occupied) {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.cell:active:not(.occupied) {
+  transform: scale(0.95);
+}
+
+.cell.x-mark {
+  color: var(--accent-coral);
+}
+
+.cell.o-mark {
+  color: var(--accent-mint);
+}
+
+.cell.win-cell {
+  background-color: rgba(255, 255, 255, 0.15);
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 2rem; }
+
+/* Mobile resizing */
+@media (max-width: 600px) {
+  .board {
+    grid-template-columns: repeat(3, 80px);
+    grid-template-rows: repeat(3, 80px);
+  }
+  .cell { font-size: 2.5rem; }
+}
