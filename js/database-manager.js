@@ -54,6 +54,7 @@ export async function createUniversalLobby(hostConfig) {
     currentGame: "STAGING",
     gameState: {},
     votes: {},
+    playerIds: [hostConfig.hostId],
     isLocked: false,
     createdAt: Date.now(),
     lastActiveAt: Date.now()
@@ -81,7 +82,8 @@ export async function joinLobby(lobbyId, playerObj) {
   }
 
   await touchLobby(lobbyId, {
-    players: arrayUnion(playerObj)
+    players: arrayUnion(playerObj),
+    playerIds: arrayUnion(playerObj.id)
   });
 }
 
@@ -103,6 +105,7 @@ export async function leaveLobby(lobbyId, playerObj) {
 
   await touchLobby(lobbyId, {
     players: arrayRemove(playerObj),
+    playerIds: arrayRemove(playerObj.id),
     votes: votes
   });
 }
