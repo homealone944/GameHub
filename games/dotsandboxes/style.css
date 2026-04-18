@@ -1,16 +1,31 @@
-/* Dots & Boxes Styles */
-
-.hidden { display: none !important; }
-
 .dab-wrapper {
   position: relative;
-  display: inline-block;
-  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
   user-select: none;
   background-color: rgba(255, 255, 255, 0.02);
   padding: 30px;
   border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
+  /* Responsive variables */
+  --dot-size: 10px;
+  --line-thick: 16px;
+}
+
+@media (max-width: 600px), (max-height: 800px) {
+  .dab-wrapper {
+    --dot-size: 8px; /* Dots shrink aggressively */
+    --line-thick: 14px; /* Lines stay thick for playability */
+    padding: 15px;
+  }
+}
+
+@media (max-width: 400px) {
+  .dab-wrapper {
+    --dot-size: 6px;
+    --line-thick: 12px;
+  }
 }
 
 .dab-board {
@@ -21,13 +36,13 @@
 /* Dots */
 .dab-dot {
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: var(--dot-size);
+  height: var(--dot-size);
   background-color: #fff;
   border-radius: 50%;
   transform: translate(-50%, -50%);
   z-index: 10;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
 /* Lines */
@@ -40,12 +55,12 @@
 }
 
 .dab-line.horizontal {
-  height: 16px;
+  height: var(--line-thick);
   transform: translate(0, -50%);
 }
 
 .dab-line.vertical {
-  width: 16px;
+  width: var(--line-thick);
   transform: translate(-50%, 0);
 }
 

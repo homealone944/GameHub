@@ -58,6 +58,21 @@ window.Notify = (function() {
     document.body.appendChild(popupOverlay);
   }
 
+  // Clear popup actions
+  function clearPopupActions() {
+    if (!popupBtnWrapper) return;
+    popupBtnWrapper.innerHTML = '';
+  }
+
+  // Helper for popup buttons
+  function createPopupButton(text, classes, onClick) {
+    const btn = document.createElement('button');
+    btn.className = `btn ${classes} w-100`;
+    btn.innerText = text;
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
   return {
     /**
      * Shows a bottom-right floating toast.
@@ -104,7 +119,6 @@ window.Notify = (function() {
      * @param {Object} options { title: string, message: string, autoCloseMs: number, showCloseButton: boolean } 
      */
     popup: function({ title = "Notification", message = "", autoCloseMs = 0, showCloseButton = true } = {}) {
-      // It's possible popup components were just created natively
       if(!popupTitle) {
          popupTitle = popupOverlay.querySelector('h3');
          popupMessage = popupOverlay.querySelector('p');
@@ -113,20 +127,54 @@ window.Notify = (function() {
 
       popupTitle.innerText = title;
       popupMessage.innerText = message;
+      clearPopupActions();
       
       if (showCloseButton) {
+        popupBtnWrapper.appendChild(createPopupButton('OK', 'btn-mint', () => popupOverlay.classList.remove('show')));
         popupBtnWrapper.style.display = 'block';
+        popupBtnWrapper.style.flexDirection = 'column';
       } else {
         popupBtnWrapper.style.display = 'none';
       }
       
       popupOverlay.classList.add('show');
-      
       if (autoCloseMs > 0) {
-        setTimeout(() => {
-          popupOverlay.classList.remove('show');
-        }, autoCloseMs);
+        setTimeout(() => popupOverlay.classList.remove('show'), autoCloseMs);
       }
+    },
+
+    /**
+     * Display a center confirmation modal.
+     */
+    confirm: function({ title = "Confirm", message = "Are you sure?", confirmText = "Confirm", cancelText = "Cancel", onConfirm, onCancel }) {
+      if(!popupTitle) {
+         popupTitle = popupOverlay.querySelector('h3');
+         popupMessage = popupOverlay.querySelector('p');
+         popupBtnWrapper = popupOverlay.querySelector('div');
+      }
+
+      popupTitle.innerText = title;
+      popupMessage.innerText = message;
+      clearPopupActions();
+      
+      popupBtnWrapper.style.display = 'flex';
+      popupBtnWrapper.style.flexDirection = 'row';
+      popupBtnWrapper.style.gap = '10px';
+
+      const cancelBtn = createPopupButton(cancelText, 'btn-secondary', () => {
+         popupOverlay.classList.remove('show');
+         if (onCancel) onCancel();
+      });
+
+      const confirmBtn = createPopupButton(confirmText, 'btn-coral', () => {
+         popupOverlay.classList.remove('show');
+         if (onConfirm) onConfirm();
+      });
+
+      popupBtnWrapper.appendChild(cancelBtn);
+      popupBtnWrapper.appendChild(confirmBtn);
+
+      popupOverlay.classList.add('show');
     }
   };
 })();

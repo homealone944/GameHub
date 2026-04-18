@@ -1,117 +1,130 @@
 /* Connect Four Specific Styles */
-.hidden { display: none !important; }
 
-.menu-actions {
+.hidden {
+  display: none !important;
+}
+
+/* The Board Area */
+.board-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.join-section {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-.join-section input {
-  flex: 1;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 1rem;
-  text-transform: uppercase;
-}
-.join-section input:focus { border-color: var(--accent-mint); outline: none; }
-
-.highlight {
-  color: var(--accent-coral);
-  font-weight: bold;
-  letter-spacing: 2px;
-}
-
-
-/* The Board */
-.board-container {
+  align-items: center;
+  margin: auto;
   position: relative;
-  display: inline-block;
-  margin: 0 auto;
+  width: max-content;
 }
 
-/* Clickable columns overlay */
+/* Click zones where discs drop - Now full height */
 .click-zones {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
   z-index: 10;
-}
-.click-col {
-  cursor: pointer;
-  background: transparent;
-  transition: background var(--transition-speed);
-}
-.click-col:hover {
-  background: rgba(255,255,255,0.05);
+  padding: 10px; /* Match board padding */
+  gap: 8px; /* Match board gap */
 }
 
-/* Visual Board */
+.click-col {
+  flex: 1;
+  background: transparent !important;
+  cursor: pointer;
+  outline: none !important;
+  border: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.click-col:hover {
+  background: rgba(255,255,255,0.05); /* Very subtle hover feedback */
+}
+
+/* Remove EVERY default browser button / focus / active style */
+.click-col:focus, 
+.click-col:active, 
+.click-col:hover:active,
+.click-col:focus-visible {
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 .c4-board {
   display: grid;
-  grid-template-columns: repeat(7, 60px);
-  grid-template-rows: repeat(6, 60px);
-  gap: 10px;
-  background-color: var(--accent-blue);
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 8px;
+  background-color: #2a3d66; /* Classic deep blue */
   padding: 10px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
-  position: relative;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  width: 420px;
+  height: 360px;
 }
 
-/* The holes */
 .c4-cell {
-  width: 100%;
-  height: 100%;
-  background-color: var(--bg-primary); /* background color to look like a hole */
+  background-color: #1a1a2e;
   border-radius: 50%;
-  box-shadow: inset 0 3px 6px rgba(0,0,0,0.5);
-  transition: background-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
 }
 
-.c4-cell.red-disc {
-  background-color: var(--accent-coral);
-}
-.c4-cell.yellow-disc {
-  background-color: #ffd43b; /* vibrant yellow */
-}
-
-.c4-cell.win-cell {
-  background-color: var(--accent-mint);
-  animation: pulse 1s infinite alternate;
+.red-disc {
+  background: radial-gradient(circle at 30% 30%, #ff5e62, #ff9966);
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  box-shadow: 0 4px 10px rgba(255,94,98,0.4);
 }
 
-@keyframes pulse {
-  from { transform: scale(1); }
-  to { transform: scale(1.1); box-shadow: 0 0 15px var(--accent-mint); }
+.yellow-disc {
+  background: radial-gradient(circle at 30% 30%, #f7d08a, #f7941d);
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  box-shadow: 0 4px 10px rgba(247,208,138,0.4);
 }
 
-.mt-1 { margin-top: 1rem; }
-.mt-2 { margin-top: 2rem; }
+.win-cell {
+  outline: 4px solid var(--accent-mint);
+  outline-offset: -2px;
+  animation: win-pulse 1s infinite alternate;
+  z-index: 5;
+}
+
+@keyframes win-pulse {
+  from { box-shadow: 0 0 5px var(--accent-mint); }
+  to { box-shadow: 0 0 20px var(--accent-mint); }
+}
 
 /* Mobile resizing */
-@media (max-width: 600px) {
+@media (max-width: 500px) {
   .c4-board {
-    grid-template-columns: repeat(7, 40px);
-    grid-template-rows: repeat(6, 40px);
-    gap: 6px;
-    padding: 6px;
+    width: 310px;
+    height: 270px;
+    gap: 5px;
+    padding: 8px;
+  }
+  .click-zones {
+      max-width: 310px;
+      gap: 5px;
+  }
+  .c4-cell {
+    width: 38px;
+    height: 38px;
+  }
+  .red-disc, .yellow-disc {
+    width: 34px;
+    height: 34px;
   }
 }

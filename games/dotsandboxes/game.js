@@ -4,7 +4,6 @@ const turnIndicator = document.getElementById('turn-indicator');
 const scoreP1El = document.getElementById('score-p1');
 const scoreP2El = document.getElementById('score-p2');
 const btnRematch = document.getElementById('btn-rematch');
-const btnNavRematch = document.getElementById('btn-rematch-nav');
 
 // Modals
 const btnRules = document.getElementById('btn-rules');
@@ -84,7 +83,14 @@ function setupListeners() {
 
   // Core
   btnRematch.addEventListener('click', startNewGame);
-  btnNavRematch.addEventListener('click', startNewGame);
+}
+
+// Support for the standardized template toggleSheet function
+function toggleSheet() {
+  const sheet = document.getElementById('control-sheet');
+  if (!sheet || sheet.classList.contains('static')) return; 
+  // Standard logic if it weren't static
+  sheet.classList.toggle('open');
 }
 
 // --- Game Logic ---
@@ -105,9 +111,6 @@ function startNewGame() {
     vLines: Array(config.rows - 1).fill(null).map(() => Array(config.cols).fill(0)),
     boxes:  Array(config.rows - 1).fill(null).map(() => Array(config.cols - 1).fill(0))
   };
-  
-  btnRematch.classList.add('hidden');
-  btnNavRematch.classList.add('hidden');
   
   renderBoard();
   updateStatus();
@@ -194,7 +197,6 @@ function checkGameOver() {
     }
     
     btnRematch.classList.remove('hidden');
-    btnNavRematch.classList.remove('hidden');
   }
 }
 
@@ -204,11 +206,13 @@ function updateStatus() {
   
   if (gameState.gameOver) {
     let tie = gameState.score[1] === gameState.score[2];
-    turnIndicator.innerText = tie ? "DRAW!" : `PLAYER ${gameState.score[1] > gameState.score[2] ? 1 : 2} WINS`;
+    turnIndicator.innerText = tie ? "DRAW!" : `P${gameState.score[1] > gameState.score[2] ? 1 : 2} WINS`;
     turnIndicator.style.color = tie ? "#fff" : (gameState.score[1] > gameState.score[2] ? "#3b82f6" : "#ef4444");
+    turnIndicator.parentElement.style.background = "transparent";
   } else {
-    turnIndicator.innerText = `PLAYER ${gameState.activePlayer} TURN`;
+    turnIndicator.innerText = `P${gameState.activePlayer} TURN`;
     turnIndicator.style.color = gameState.activePlayer === 1 ? "#3b82f6" : "#ef4444";
+    turnIndicator.parentElement.style.background = "transparent";
   }
 }
 

@@ -8,6 +8,11 @@ const rulesModal = document.getElementById('rules-modal');
 const btnCloseRules = document.getElementById('btn-close-rules');
 const btnRulesOk = document.getElementById('btn-rules-ok');
 
+const sheet = document.getElementById('control-sheet');
+const footerTrigger = document.getElementById('footer-trigger');
+const overlay = document.getElementById('sheet-overlay');
+const sheetHeader = document.getElementById('sheet-header-close');
+
 // Game State
 let gameState = {
   board: Array(9).fill(null), // null, 'X', or 'O'
@@ -25,13 +30,31 @@ const WINNING_COMBINATIONS = [
 
 // --- initialization ---
 function init() {
-  btnRematch.addEventListener('click', rematch);
+  btnRematch.addEventListener('click', () => {
+    rematch();
+    toggleSheet(); // Close sheet after rematch
+  });
+  
   cells.forEach(cell => {
     cell.addEventListener('click', (e) => handleCellClick(parseInt(e.target.dataset.index)));
   });
   
+  // Sheet Toggle Logic
+  function toggleSheet() {
+    if (sheet.classList.contains('static')) return; // Ignore toggles in static mode
+    const isActive = sheet.classList.toggle('active');
+    overlay.classList.toggle('hidden', !isActive);
+  }
+
+  footerTrigger.addEventListener('click', toggleSheet);
+  overlay.addEventListener('click', toggleSheet);
+  sheetHeader.addEventListener('click', toggleSheet);
+
   if(btnRules && rulesModal) {
-    btnRules.addEventListener('click', () => rulesModal.classList.remove('hidden'));
+    btnRules.addEventListener('click', () => {
+      rulesModal.classList.remove('hidden');
+      toggleSheet(); // Close sheet when opening modal
+    });
     btnCloseRules.addEventListener('click', () => rulesModal.classList.add('hidden'));
     btnRulesOk.addEventListener('click', () => rulesModal.classList.add('hidden'));
   }
@@ -91,14 +114,12 @@ function renderBoard() {
 
   if (gameState.winner) {
     turnIndicator.innerText = `${gameState.winner} Wins! 🎉`;
-    btnRematch.classList.remove('hidden');
+    if (window.Notify) Notify.toast(`${gameState.winner} has won the game!`);
   } else if (gameState.isDraw) {
     turnIndicator.innerText = "It's a Draw! 🤝";
-    btnRematch.classList.remove('hidden');
   } else {
     const nextSym = gameState.xIsNext ? 'X' : 'O';
     turnIndicator.innerText = `${nextSym}'s Turn`;
-    btnRematch.classList.add('hidden');
   }
 }
 

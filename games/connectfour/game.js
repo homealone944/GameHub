@@ -8,6 +8,9 @@ const rulesModal = document.getElementById('rules-modal');
 const btnCloseRules = document.getElementById('btn-close-rules');
 const btnRulesOk = document.getElementById('btn-rules-ok');
 
+const sheet = document.getElementById('control-sheet');
+const overlay = document.getElementById('sheet-overlay');
+
 const ROWS = 6;
 const COLS = 7;
 
@@ -23,6 +26,13 @@ let cellElements = [];
 
 function init() {
   btnRematch.addEventListener('click', rematch);
+
+  // Sheet Toggle Logic (Guarded for Static Mode)
+  function toggleSheet() {
+    if (sheet.classList.contains('static')) return;
+    const isActive = sheet.classList.toggle('active');
+    overlay.classList.toggle('hidden', !isActive);
+  }
 
   // Generate DOM cells
   for (let r = 0; r < ROWS; r++) {
@@ -139,16 +149,28 @@ function renderBoard() {
   if (gameState.winner) {
     const winName = gameState.winner === 'R' ? 'Red' : 'Yellow';
     turnIndicator.innerText = `${winName} Wins! 🎉`;
-    btnRematch.classList.remove('hidden');
+    if (window.Notify) Notify.toast(`${winName} has won the game!`);
   } else if (gameState.isDraw) {
     turnIndicator.innerText = "It's a Draw! 🤝";
-    btnRematch.classList.remove('hidden');
   } else {
-    const nextSym = gameState.redIsNext ? 'R' : 'Y';
     const nextName = gameState.redIsNext ? 'Red' : 'Yellow';
     turnIndicator.innerText = `${nextName}'s Turn`;
-    btnRematch.classList.add('hidden');
   }
 }
 
+// --- Input Handling ---
+function setupKeyboardListeners() {
+  document.addEventListener('keydown', (e) => {
+    // Only handle if not in a modal or input field
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+    
+    const key = e.key;
+    if (key >= '1' && key <= '7') {
+      const colIndex = parseInt(key) - 1;
+      handleColClick(colIndex);
+    }
+  });
+}
+
 init();
+setupKeyboardListeners();
