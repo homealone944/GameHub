@@ -149,7 +149,7 @@ function setupListeners() {
 
   // Prefill word area
   if (inputWords && !inputWords.value) {
-    inputWords.value = DEFAULT_WORDS_2.join(', ');
+    inputWords.value = DEFAULT_WORDS.join(', ');
   }
 
   inputTokens.addEventListener('input', () => {

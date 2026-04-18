@@ -1,5 +1,5 @@
 /* js/lobby-shell.js */
-import { subscribeToLobby, leaveLobby, deleteLobby, setLobbyGame, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote, touchLobby, getAllLobbies } from './firebase-multiplayer.js';
+import { subscribeToLobby, leaveLobby, deleteLobby, setLobbyGame, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote, touchLobby, getAllLobbies } from './database-manager.js';
 
 // Client Session ID (shared across all pages via localStorage)
 let CLIENT_ID = localStorage.getItem('gh_clientId');
@@ -15,6 +15,7 @@ const LOBBY_ID = urlParams.get('lobby') ? urlParams.get('lobby').trim().toUpperC
 window.CLIENT_ID = CLIENT_ID;
 window.currentLobbyId = LOBBY_ID;
 window.currentLobbyData = null;
+window.isEndingGame = false; // Prevents local redirect-bounce during host cleanup
 
 // Internal State
 window.sessionStartTime = Date.now(); // Track page life for redirection grace periods
@@ -344,18 +345,17 @@ function makeLinksLobbyAware() {
               try {
                 // 1. Mark this as a manual termination to block the redirect loop
                 localStorage.setItem('gh_last_game_end_time', Date.now());
+                window.isEndingGame = true; // LOCK: Prevent handleGlobalRedirection from taking over
 
-                // 2. Ensure the Firebase command is issued
-                console.log("[Shell] Calling setLobbyGame(null)...");
+                // 2. Ensure the Firebase command is issued and confirmed
+                console.log("[Shell] Calling setLobbyGame(STAGING)...");
                 await setLobbyGame(LOBBY_ID, "STAGING");
-                console.log("[Shell] setLobbyGame returned. Starting 3s safety wait.");
-                
-                // Manual wait for 3 seconds to ensure all guests receive the signal
-                setTimeout(() => {
-                   console.log("[Shell] Finalizing redirection to Hub.");
-                   window.location.href = targetUrl;
-                }, 3000); 
+
+                // 3. Redirection is only safe AFTER the await above finishes
+                console.log("[Shell] Sync confirmed. Finalizing redirection to Hub.");
+                window.location.href = targetUrl;
               } catch (err) {
+                window.isEndingGame = false; // UNLOCK on failure
                 console.error("[Shell] Game End Sync FAILED:", err);
                 if(window.Notify) window.Notify.toast("Termination Failed: " + err.message);
               }
@@ -431,27 +431,26 @@ async function startGarbageCollector() {
 
 function handleGlobalRedirection(data) {
   // If we are currently the host and actively launching a game from the Hub,
-  // we block handleGlobalRedirection so hub.js can await the server sync
+  // we block handleGlobalRedirection so logic files can await the server sync
   // before manually navigating.
-  if (window.isLaunchingGame) return;
+  if (window.isLaunchingGame || window.isEndingGame) return;
 
   const currentPath = window.location.pathname;
   const root = getProjectRoot();
-  
-  if (data.currentGame && data.currentGame !== "STAGING") {
-    // REDIRECT PROTECTION: If we just ended a game (Host action), ignore the server's "active game"
-    // signal for 5 seconds to allow the null update to propagate.
-    const lastEnd = parseInt(localStorage.getItem('gh_last_game_end_time') || '0');
-    if (Date.now() - lastEnd < 5000) {
-       console.log("[Shell] Ignoring currentGame signal: Recently ended a game.");
-       return;
-    }
 
+  console.log("handleGlobalRedirection")
+  console.log(data)
+  
+  if (data.currentGame && data.currentGame !== "STAGING" && data.currentGame !== "HUB") {
     const targetPathPart = `/games/${data.currentGame}/`;
-    // ONLY redirect if we are NOT already in that game's folder
-    if (!currentPath.includes(targetPathPart)) {
-       if (window.Notify) window.Notify.toast("🛰️ MISSION DEPLOYED. STAND BY...", 3000);
-       console.log(`[Shell] Deploying to active operation: ${data.currentGame}`);
+    const isOnline = new URLSearchParams(window.location.search).get('mode') === 'online';
+    
+    // Redirect if:
+    // 1. We are NOT in the right game folder
+    // 2. OR we are in the right folder but NOT in online mode
+    if (!currentPath.includes(targetPathPart) || !isOnline) {
+       if (window.Notify) window.Notify.toast("New Game Starting. STAND BY...", 3000);
+       console.log(`[Shell] Starting Game: ${data.currentGame}`);
        window.location.href = root + `games/${data.currentGame}/index.html?lobby=${LOBBY_ID}&mode=online`;
     }
   } else {
@@ -461,22 +460,8 @@ function handleGlobalRedirection(data) {
     
     // Only kick back to Hub if we are in a game folder AND not intentionally in local mode
     if (isInGameFolder && !isLocalMode) {
-       // Grace period check: if we just loaded the page, currentGame might be null briefly
-       // We only kick back if we've been here long enough (prevents hub-bounce on initial load)
-       const sessionAge = Date.now() - window.sessionStartTime;
-
-       if (sessionAge > 2000) {
-          console.log(`[Shell] No active lobby game detected. Recalling to Hub.`);
-          window.location.href = root + `index.html?lobby=${LOBBY_ID}`;
-       } else {
-          // If we're still in the grace period, check again once it expires
-          setTimeout(() => {
-             // Re-verify the current state before redirecting
-             if (window.currentLobbyData && (window.currentLobbyData.currentGame === null || window.currentLobbyData.currentGame === "STAGING")) {
-                handleGlobalRedirection(window.currentLobbyData);
-             }
-          }, 2100 - sessionAge);
-       }
+       console.log(`[Shell] No active lobby game detected. Recalling to Hub.`);
+       window.location.href = root + `index.html?lobby=${LOBBY_ID}`;
     }
   }
 }

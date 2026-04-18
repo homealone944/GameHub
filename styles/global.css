@@ -33,11 +33,18 @@ body {
   overflow-y: auto;
 }
 
+/* Force no-scroll when in a game */
+body:has(.game-viewport) {
+  overflow: hidden !important;
+  height: 100dvh;
+}
+
 /* Universal Game Layout Wrapper */
 .game-viewport {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100vh; /* Fallback */
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -131,7 +138,8 @@ body {
   position: relative !important;
   bottom: 0 !important;
   transform: none !important;
-  max-height: none;
+  max-height: 40vh; /* Capped to prevent pushing board off screen */
+  overflow-y: auto;
   background: var(--bg-secondary);
   border-top: 1px solid rgba(255,255,255,0.05);
   border-radius: 0;

@@ -1,39 +1,41 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, updateDoc, deleteDoc, arrayUnion, arrayRemove, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+/* js/database-manager.js */
+import { 
+  db, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  collection, 
+  onSnapshot, 
+  updateDoc, 
+  deleteDoc, 
+  arrayUnion, 
+  arrayRemove, 
+  deleteField 
+} from './firebase-init.js';
 
-// =======================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDlWeqH_T07o_zACqU7bUk8D5eMwinFkCk",
-  authDomain: "gamehub-f5d58.firebaseapp.com",
-  projectId: "gamehub-f5d58",
-  storageBucket: "gamehub-f5d58.firebasestorage.app",
-  messagingSenderId: "746688870410",
-  appId: "1:746688870410:web:d444ecb7d20680146907f3"
-};
-
-// =======================================================
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// Helper to push lastActiveAt timestamps on every mutating action
+/**
+ * Helper to push lastActiveAt timestamps on every mutating action
+ */
 export async function touchLobby(lobbyId, updates = {}) {
   updates.lastActiveAt = Date.now();
-  console.log(`[Firebase] touchLobby ATTEMPT path="lobbies/${lobbyId}" (ID length: ${lobbyId?.length})`, updates);
+  console.log(`[Database] touchLobby ATTEMPT path="lobbies/${lobbyId}" (ID length: ${lobbyId?.length})`, updates);
   
   try {
     const docRef = doc(db, "lobbies", lobbyId);
-    console.log(`[Firebase] docRef path resolved to:`, docRef.path);
+    console.log(`[Database] docRef path resolved to:`, docRef.path);
     await setDoc(docRef, updates, { merge: true });
-    console.log(`[Firebase] touchLobby SUCCESS for ${lobbyId}`);
+    console.log(`[Database] touchLobby SUCCESS for ${lobbyId}`);
   } catch (err) {
-    console.error(`[Firebase] touchLobby FAILED for ${lobbyId}:`, err);
+    console.error(`[Database] touchLobby FAILED for ${lobbyId}:`, err);
     throw err;
   }
 }
 
-// Generate a random 4-character lobby code
-function generateLobbyId() {
+/**
+ * Generate a random 4-character lobby code
+ */
+export function generateLobbyId() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 }
 
@@ -69,29 +71,39 @@ export async function joinLobby(lobbyId, playerObj) {
   if (!snap.exists()) throw new Error("Lobby not found");
   
   const data = snap.data();
-  // Check max players
   if (data.isLocked) {
      throw new Error("This lobby is currently locked by the Host.");
   }
   if (data.players.length >= data.maxPlayers) {
-    // Exception: if player is already in the list (re-joining) let them in
     if (!data.players.find(p => p.id === playerObj.id)) {
        throw new Error("Lobby is full");
     }
   }
 
-  // Push user into array safely
   await touchLobby(lobbyId, {
     players: arrayUnion(playerObj)
   });
 }
 
 /**
- * Removes a player
+ * Removes a player and cleans up their votes
  */
 export async function leaveLobby(lobbyId, playerObj) {
+  const lobbyRef = doc(db, "lobbies", lobbyId);
+  const snap = await getDoc(lobbyRef);
+  if (!snap.exists()) return;
+  
+  const data = snap.data();
+  const votes = data.votes || {};
+  
+  // Scrip votes for this player across all games
+  for (const gameId in votes) {
+    votes[gameId] = votes[gameId].filter(id => id !== playerObj.id);
+  }
+
   await touchLobby(lobbyId, {
-    players: arrayRemove(playerObj)
+    players: arrayRemove(playerObj),
+    votes: votes
   });
 }
 
@@ -106,24 +118,24 @@ export async function deleteLobby(lobbyId) {
  * Sets the active game (bringing everyone in) or drops them out (null)
  */
 export async function setLobbyGame(lobbyId, gameId) {
-  console.log(`[Firebase] setLobbyGame PRE-FLIGHT: Lobby=${lobbyId}, Game=${gameId}`);
+  console.log(`[Database] setLobbyGame: Lobby=${lobbyId}, Game=${gameId}`);
   
   if (!lobbyId) {
-    console.error("[Firebase] setLobbyGame FAILED: No Lobby ID provided.");
+    console.error("[Database] setLobbyGame FAILED: No Lobby ID provided.");
     return;
   }
 
   const updates = {
-    currentGame: (gameId === null || gameId === undefined || gameId === "hub" || gameId === "STAGING") ? "STAGING" : gameId,
+    currentGame: (gameId === null || gameId === undefined || gameId === "HUB" || gameId === "STAGING") ? "STAGING" : gameId,
     gameState: deleteField() // Reset game state whenever the game changes
   };
 
   try {
-    console.log(`[Firebase] setLobbyGame COMMIT START for ${lobbyId}`);
+    console.log(`[Database] setLobbyGame COMMIT START for ${lobbyId}`);
     await touchLobby(lobbyId, updates);
-    console.log(`[Firebase] setLobbyGame COMMIT SUCCESS for ${lobbyId}. Field 'currentGame' should now be removed/updated.`);
+    console.log(`[Database] setLobbyGame COMMIT SUCCESS for ${lobbyId}. Field 'currentGame' should now be removed/updated.`);
   } catch (err) {
-    console.error(`[Firebase] setLobbyGame COMMIT ERROR for ${lobbyId}:`, err);
+    console.error(`[Database] setLobbyGame COMMIT ERROR for ${lobbyId}:`, err);
     throw err;
   }
 }
@@ -168,12 +180,10 @@ export async function setVote(lobbyId, gameId, playerId) {
 
   let isRemoving = votes[gameId] && votes[gameId].includes(playerId);
 
-  // Remove player from all games to enforce single vote
   for (const g in votes) {
     votes[g] = votes[g].filter(id => id !== playerId);
   }
 
-  // If they were not removing their vote from this same game, add it
   if (!isRemoving) {
     if (!votes[gameId]) votes[gameId] = [];
     votes[gameId].push(playerId);
@@ -207,11 +217,31 @@ export async function updatePlayerName(lobbyId, playerId, newName) {
 
 /**
  * Updates the game state natively by merging objects.
+ * Use this for simple bulk overwrites.
  */
 export async function updateGameState(lobbyId, newState) {
   await setDoc(doc(db, "lobbies", lobbyId), {
     gameState: newState
   }, { merge: true });
+}
+
+/**
+ * Patches specific sub-fields of the game state.
+ * Supports dot notation for nested updates (e.g., {"gameState.moves": arrayUnion(move)})
+ * Use this for "History" models or atomic updates.
+ */
+export async function patchGameState(lobbyId, updates) {
+  const lobbyRef = doc(db, "lobbies", lobbyId);
+  // Ensure updates are targeted at the gameState field
+  const finalUpdates = {};
+  for (const key in updates) {
+    if (key.startsWith('gameState.')) {
+      finalUpdates[key] = updates[key];
+    } else {
+      finalUpdates[`gameState.${key}`] = updates[key];
+    }
+  }
+  await updateDoc(lobbyRef, finalUpdates);
 }
 
 /**
@@ -222,7 +252,9 @@ export function subscribeToLobby(lobbyId, callback) {
   return onSnapshot(doc(db, "lobbies", lobbyId), (docSnap) => {
     callback(docSnap.exists() ? docSnap.data() : null);
   });
-}/**
+}
+
+/**
  * Fetches all active lobbies for garbage collection or listing
  */
 export async function getAllLobbies() {

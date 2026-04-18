@@ -1,5 +1,5 @@
 /* js/hub.js */
-import { createUniversalLobby, joinLobby, leaveLobby, deleteLobby, setLobbyGame, subscribeToLobby, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote } from './firebase-multiplayer.js';
+import { createUniversalLobby, joinLobby, leaveLobby, deleteLobby, setLobbyGame, subscribeToLobby, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote } from './database-manager.js';
 import { GAMES_CATALOG } from './catalog.js';
 import { generateRandomName } from './names.js';
 
@@ -136,6 +136,13 @@ function setupLobbyBindings() {
      } catch(e) {
        if(window.Notify) window.Notify.toast("Join Failed: " + e.message);
      }
+   });
+
+   // Keyboard Support: Hitting Enter in the input triggers the Join button
+   inputJoinCode.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+         btnJoinLobby.click();
+      }
    });
 }
 
@@ -463,7 +470,7 @@ function createGameCard(game) {
     
     if (window.currentLobbyId && window.currentLobbyData) {
        if (window.currentLobbyData.hostId === window.CLIENT_ID) {
-          onlineText = "Launch Game";
+          onlineText = "Launch Online";
           btnClass = "btn-mint";
           const gameVotes = window.currentLobbyData.votes ? window.currentLobbyData.votes[game.id] : [];
           if (gameVotes && gameVotes.length > 0) {
@@ -472,16 +479,18 @@ function createGameCard(game) {
        } else {
           const gameVotes = window.currentLobbyData.votes ? window.currentLobbyData.votes[game.id] : [];
           const hasVoted = gameVotes && gameVotes.includes(window.CLIENT_ID);
+         
           if (hasVoted) {
              voteUIHtml = `<button class="btn-online btn-vote" data-game="${game.id}" style="position:absolute; top:10px; left:10px; z-index:10; background:var(--accent-mint); color:#000; padding:4px 8px; border-radius:12px; font-size:0.75rem; border:none; cursor:pointer; font-weight:bold;">✅</button>`;
           } else {
              voteUIHtml = `<button class="btn-online btn-vote" data-game="${game.id}" style="position:absolute; top:10px; left:10px; z-index:10; background:rgba(255,255,255,0.1); padding:4px 8px; border-radius:12px; font-size:0.75rem; border:1px solid rgba(255,255,255,0.2); cursor:pointer;">✋</button>`;
           }
-          onlineText = "Waiting for Host";
-          btnClass = "btn-secondary disabled";
+          hideOnlineBtn = true;
        }
     }
-    buttonsHtml += `<button class="btn btn-sm btn-online ${btnClass}" data-game="${game.id}">${onlineText}</button>`;
+    if (!hideOnlineBtn) {
+      buttonsHtml += `<button class="btn btn-sm btn-online ${btnClass}" data-game="${game.id}">${onlineText}</button>`;
+    }
   }
 
   card.innerHTML = `

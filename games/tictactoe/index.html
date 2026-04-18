@@ -38,6 +38,7 @@
        <div class="status-item" style="display: flex; flex-direction: column; align-items: center;">
          <div class="status-label">GAME STATUS</div>
          <div id="turn-indicator" class="status-value text-gradient">X'S TURN</div>
+         <div id="self-role-badge" class="role-badge spectating">SPECTATING</div>
        </div>
     </div>
 
@@ -76,6 +77,22 @@
         <span>🔄</span>
         <span>Rematch</span>
       </button>
+
+      <!-- Host Seating Control (populated by JS) -->
+      <div id="host-seating-section" class="hidden" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1.5rem;">
+        <h4 style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Match Seating</h4>
+        
+        <div class="seating-grid">
+           <div class="seat-slot">
+              <label>Player X</label>
+              <select id="select-player-x" class="seat-select"></select>
+           </div>
+           <div class="seat-slot">
+              <label>Player O</label>
+              <select id="select-player-o" class="seat-select"></select>
+           </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -104,6 +121,6 @@
 
   <script src="../../js/notify.js"></script>
   <script src="../../js/lobby-shell.js" type="module"></script>
-  <script src="game.js"></script>
+  <script src="game.js" type="module"></script>
 </body>
 </html>

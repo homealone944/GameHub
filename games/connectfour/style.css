@@ -128,3 +128,46 @@
     height: 34px;
   }
 }
+
+/* Role Badges */
+.role-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+.role-badge.playing-red { background: var(--accent-coral); color: white; }
+.role-badge.playing-yellow { background: #ffca28; color: #121212; }
+.role-badge.spectating { background: rgba(255,255,255,0.1); color: var(--text-secondary); }
+
+/* Seating UI */
+.seating-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.seat-slot { display: flex; flex-direction: column; gap: 6px; }
+.seat-slot label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding-left: 2px;
+}
+.seat-select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+.seat-select:focus { border-color: var(--accent-mint); }
+.seat-select option { background-color: var(--bg-card); color: white; }
+
+.hidden-host-only { display: none !important; }
