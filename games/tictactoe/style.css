@@ -1,60 +1,18 @@
 /* Tic-Tac-Toe Specific Styles */
 
-.hidden {
-  display: none !important;
-}
-
-.menu-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-.join-section {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.join-section input {
-  flex: 1;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 1rem;
-  outline: none;
-  text-transform: uppercase;
-}
-
-.join-section input:focus {
-  border-color: var(--accent-mint);
-}
-
-.highlight {
-  color: var(--accent-coral);
-  font-weight: bold;
-  letter-spacing: 2px;
-}
-
 /* The Board */
 .board {
   display: grid;
   grid-template-columns: repeat(3, 100px);
   grid-template-rows: repeat(3, 100px);
   gap: 10px;
-  margin: 0 auto;
   background-color: rgba(255, 255, 255, 0.05);
   padding: 10px;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
-  width: max-content;
+  margin: auto;
+  transform: scale(1);
+  transition: transform 0.2s;
 }
 
 .cell {
@@ -68,6 +26,8 @@
   cursor: pointer;
   transition: background-color var(--transition-speed), transform var(--transition-speed);
   user-select: none;
+  width: 100px;
+  height: 100px;
 }
 
 .cell:hover:not(.occupied) {
@@ -96,14 +56,100 @@
   to { transform: scale(1.05); }
 }
 
-.mt-1 { margin-top: 1rem; }
-.mt-2 { margin-top: 2rem; }
-
 /* Mobile resizing */
 @media (max-width: 600px) {
   .board {
     grid-template-columns: repeat(3, 80px);
     grid-template-rows: repeat(3, 80px);
   }
-  .cell { font-size: 2.5rem; }
+  .cell { 
+    font-size: 2.5rem;
+    width: 80px;
+    height: 80px;
+  }
+}
+
+/* Multi-player Seating UI */
+.role-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+.role-badge.playing-x { background: var(--accent-coral); color: white; }
+.role-badge.playing-o { background: var(--accent-mint); color: var(--bg-primary); }
+.role-badge.spectating { background: rgba(255,255,255,0.1); color: var(--text-secondary); }
+
+.seating-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.seat-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seat-slot label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding-left: 2px;
+}
+
+.seat-select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.seat-select:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.seat-select:focus {
+  border-color: var(--accent-mint);
+  background: rgba(255,255,255,0.1);
+}
+
+#select-player-x:focus { border-color: var(--accent-coral); }
+#select-player-o:focus { border-color: var(--accent-mint); }
+
+/* Option styling for readability */
+.seat-select option {
+  background-color: var(--bg-card);
+  color: white;
+  padding: 10px;
+}
+
+.hidden-host-only {
+  display: none !important;
+}
+
+/* Compact specific for short screens */
+@media (max-height: 750px) {
+  .status-bar-premium { margin-bottom: 0.5rem; padding: 5px 15px; }
+  .board { transform: scale(0.9); }
+  .bottom-sheet.static .sheet-content { padding: 0.75rem 0.5rem; gap: 0.5rem; }
+  .sheet-btn { padding: 0.5rem; min-width: 120px; font-size: 0.8rem; }
+  #host-seating-section { margin-top: 0.5rem !important; }
+}
+
+@media (max-height: 650px) {
+  .board { transform: scale(0.8); }
+  .nav-game-title { font-size: 1rem; }
+  .game-header { height: 50px; }
 }

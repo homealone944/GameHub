@@ -1,258 +1,303 @@
-/* Codenames Duet Styles */
+/* Codenames Duet Unified Template Styles */
 
-.hidden { display: none !important; }
-
-.duet-container {
-  max-width: 1200px;
-}
-
-
-
-.highlight {
-  color: var(--accent-coral);
-  font-weight: bold;
-}
-
-.duet-layout {
+/* 1. Viewport & Body Layout */
+.duet-board-container {
   display: flex;
-  gap: 2rem;
-  align-items: flex-start;
-  flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
+  padding: 1.5rem 1rem 0.5rem 1rem; /* Tighten bottom padding */
+  width: 100%;
 }
 
-.board-wrapper {
-  flex: 2;
-  min-width: 300px;
+.game-body {
+  justify-content: flex-start !important; /* Move content to top to reduce dead space */
+  overflow-y: auto !important;
+  padding-bottom: 100px !important; /* Clears the sheet peek and adds comfort margin */
 }
 
 .duet-board {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 10px;
-  background-color: rgba(255, 255, 255, 0.02);
-  padding: 10px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
+  width: 100%;
+  max-width: 800px;
+  max-height: 100%;
+  aspect-ratio: 5 / 4; /* Standard Codenames feel */
 }
 
+/* 2. Cards */
 .card {
-  aspect-ratio: 4/3;
-  background-color: var(--bg-card);
-  border-radius: 8px;
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-card);
+  border: 2px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 1rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-  transition: transform 0.3s, background-color 0.3s;
-  user-select: none;
   text-align: center;
-  padding: 5px;
+  padding: 8px;
+  font-size: clamp(0.6rem, 2vw, 0.9rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  overflow: hidden;
   word-break: break-word;
-  border: 2px solid transparent;
 }
 
 .card:hover:not(.revealed) {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-4px);
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: var(--shadow-md);
 }
 
+/* Card Reveal States */
 .card.revealed {
   cursor: default;
-  color: #fff;
-  transform: scale(0.98);
-  box-shadow: inset 0 3px 6px rgba(0,0,0,0.5);
+  transform: scale(0.95);
+  box-shadow: inset 0 4px 12px rgba(0,0,0,0.4);
 }
 
-/* Card Types */
-.card.revealed.green { background-color: #38bdf8; } /* Agent (Green in standard but blue here for contrast?) Actually Duet standard is Green */
-.card.revealed.green { background-color: #4ade80; color: #064e3b; } 
-.card.revealed.black { background-color: #1f2937; color: #f87171; border: 2px solid #ef4444; } /* Assassin */
-.card.revealed.bystander { background-color: #d1d5db; color: #4b5563; } /* Innocent bystander */
-.card.partial-bystander { position: relative; } /* Don't change background, just host the token absolute */
+.card.revealed.green {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Cross-hatch for agents already found (shown during Intel phase) */
+.card.intel-green.is-found {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(16, 185, 129, 0.2),
+    rgba(16, 185, 129, 0.2) 10px,
+    rgba(16, 185, 129, 0.4) 10px,
+    rgba(16, 185, 129, 0.4) 20px
+  ) !important;
+  opacity: 0.6;
+}
+
+.card.revealed.black {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  color: #ef4444;
+  border: 2px solid #ef4444;
+}
+
+.card.revealed.bystander {
+  background: linear-gradient(135deg, #4b5563, #374151);
+  color: #9ca3af;
+  border: none;
+}
+
+/* Intel Phase - Highlights for current player's key */
+.card.intel-green {
+  border: 3px solid #10b981 !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.card.intel-black {
+  border: 3px solid #ef4444 !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+/* Partial Bystanders (Duet Tokens) */
+.card.partial-bystander {
+  position: relative;
+}
 
 .bystander-token {
   position: absolute;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.8);
+  border: 2px solid #fff;
+  z-index: 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
-.bystander-token.p1 { bottom: 4px; left: 4px; background-color: #3b82f6; } /* Royal Blue */
-.bystander-token.p2 { bottom: 4px; right: 4px; background-color: #a855f7; } /* Deep Purple */
 
-/* Intel Phase Info */
-.intel-phase-board .card { cursor: default; }
-.intel-phase-board .card:hover:not(.revealed) { transform: none; border-color: transparent; }
-.card.intel-green { border: 2px solid #4ade80 !important; }
-.card.intel-black { border: 2px solid #ef4444 !important; }
+.bystander-token.p1 { top: 6px; left: 6px; background: #3b82f6; }
+.bystander-token.p2 { top: 6px; right: 6px; background: #ef4444; }
 
-#game-over-banner {
-  background: var(--bg-card);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
+/* 3. Action Zone */
+.action-zone {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+#clue-input-area {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 500px;
+  flex-wrap: nowrap; /* Keep them together if possible */
+}
+
+@media (max-width: 480px) {
+  #clue-input-area {
+    flex-wrap: wrap; /* Wrap on very small screens */
+  }
+  .clue-input-primary {
+    flex: 1 1 100%; /* Force word input to top if wrapping */
+  }
+}
+
+.clue-input-primary {
+  flex: 2;
+  min-width: 0; /* Allow shrinking */
+  background: var(--bg-secondary);
   border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
-#game-over-banner h2 { margin-bottom: 0.5rem; letter-spacing: 2px; }
-.win-text { color: var(--accent-mint); }
-.lose-text { color: var(--accent-coral); }
 
-/* Side Panel */
-.side-panel {
-  flex: 1;
-  min-width: 250px;
+.clue-num-wrapper input {
+  width: 50px;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 0.8rem 0.2rem;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 800;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.clue-num-wrapper input::-webkit-outer-spin-button,
+.clue-num-wrapper input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 4. Clue log (Minimalist) */
+.clue-history-container {
+  padding: 0 1.5rem 1rem 1.5rem;
+  width: 100%;
+  height: auto;
+  min-height: min-content;
+  overflow: visible !important;
+}
+
+.clue-log-minimal {
   display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.key-card-container, .clue-log-container {
-  background-color: var(--bg-secondary);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
-  text-align: left;
-}
-
-.key-card-container h3, .clue-log-container h3 {
-  margin-bottom: 1rem;
-  font-size: 1.2rem;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-  padding-bottom: 0.5rem;
-}
-
-.clue-log {
-  max-height: 400px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 1.5rem;
-  font-size: 0.9rem;
-  padding-left: 10px;
+  justify-content: center;
+  width: 100%;
+  height: auto;
+  overflow: visible !important;
 }
 
 .log-entry {
-  position: relative;
-  padding-left: 20px;
-  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: max-content; /* Fit content width */
+  min-width: 140px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.03);
+  padding: 15px 20px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05);
+  gap: 8px;
 }
 
-.log-entry::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 0;
-  width: 14px;
-  height: 14px;
-  background-color: var(--accent-coral);
-  border-radius: 50%;
+.log-entry.player1-log { border-left: 3px solid #3b82f6; }
+.log-entry.player2-log { border-left: 3px solid #ef4444; }
+
+.log-clue { 
+  font-size: clamp(1.2rem, 4vw, 1.8rem); /* Responsive scaling */
+  font-weight: 900; 
+  color: #fff; 
+  text-transform: uppercase;
+  margin-top: 4px;
 }
-
-.log-entry.player1-log::before { background-color: #3b82f6; }
-.log-entry.player2-log::before { background-color: #a855f7; }
-
-.log-entry .log-player { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: bold; letter-spacing: 1px; }
-.log-entry .log-clue { font-weight: 800; font-size: 1.2rem; color: #fff; text-transform: uppercase; display: block; margin-top: 5px; }
+.log-player { 
+  font-size: clamp(0.7rem, 2vw, 0.9rem); /* Responsive scaling */
+  font-weight: 700;
+  color: var(--text-secondary); 
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
 
 .log-guesses {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 10px;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 8px;
+  width: 100%;
 }
 
 .guess-pill {
   padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: bold;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 900;
   text-transform: uppercase;
-}
-.guess-green { background-color: rgba(74, 222, 128, 0.2); color: #4ade80; border: 1px solid #4ade80; }
-.guess-bystander { background-color: rgba(255, 255, 255, 0.1); color: var(--text-secondary); border: 1px solid transparent; }
-.guess-assassin { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
-
-/* Clue Input */
-.clue-input-area {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-  justify-content: center;
-}
-.clue-input-area input {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.1);
+  text-align: left;
 }
 
-/* Animations for penalties */
+.guess-pill.guess-agent {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.guess-pill.guess-bystander {
+  background: rgba(255, 255, 255, 0.05);
+  color: #9ca3af;
+}
+
+.guess-pill.guess-assassin {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* 5. Transitions & Animations */
 @keyframes shakeGrid {
   0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-10px) rotate(-1deg); }
-  40% { transform: translateX(10px) rotate(1deg); }
-  60% { transform: translateX(-10px) rotate(-1deg); }
-  80% { transform: translateX(10px) rotate(1deg); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
 }
+
 .shake-board {
-  animation: shakeGrid 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  animation: shakeGrid 0.4s ease-in-out;
 }
 
-.bystander-shake-x {
-  position: relative;
-  overflow: visible;
-}
-.bystander-shake-x::after {
-  content: '❌';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0);
-  font-size: 3rem;
-  z-index: 100;
-  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-@keyframes popIn {
-  100% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
-}
-
-/* Modals */
-.overlay-mask {
-  background: var(--bg-primary); /* completely opaque so they can't peek! */
-}
-.settings-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.settings-group label {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-.settings-group input, .settings-group textarea {
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: var(--bg-card);
-  color: var(--text-primary);
-  font-family: inherit;
-}
-.text-left { text-align: left; }
-
-/* Mobile */
-@media (max-width: 768px) {
+/* 6. Mobile Optimization */
+@media (max-width: 600px) {
   .duet-board {
-    gap: 4px;
-    padding: 4px;
+    gap: 6px;
   }
   .card {
+    border-radius: 8px;
+    padding: 4px;
     font-size: 0.7rem;
-    padding: 2px;
+  }
+  .action-zone {
+    padding: 0.8rem;
+  }
+  .clue-input-primary {
+    padding: 0.6rem;
   }
 }

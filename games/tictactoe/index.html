@@ -14,77 +14,113 @@
 </head>
 <body>
 
-  <!-- Standard Game Navigation -->
-  <input type="checkbox" id="nav-toggle" class="nav-toggle">
-  <label for="nav-toggle" class="menu-overlay"></label>
-  <nav class="game-top-nav">
+<div class="game-viewport">
+  
+  <!-- Top Bar -->
+  <header class="game-header">
     <div class="nav-left">
-      <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">GameHub</a>
-      <label for="nav-toggle" class="nav-toggle-label">☰</label>
+      <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">
+        <span class="logo-full">GameHub</span>
+        <span class="logo-short">GH</span>
+      </a>
     </div>
     <div class="nav-center">
       <h2 class="nav-game-title">Tic-Tac-Toe</h2>
     </div>
-    <div class="nav-right">
-      <label for="nav-toggle" class="close-menu-label">&times;</label>
-      <button id="btn-rules" class="btn btn-sm btn-primary">📖 Rules</button>
-      <button id="btn-settings" class="btn btn-sm btn-primary">⚙️ Settings</button>
-      <button id="btn-lobby" class="btn btn-sm btn-primary hidden">🌐 Lobby</button>
+    <div class="nav-right"></div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="game-body">
+    
+    <!-- Premium Status Bar -->
+    <div id="game-status-bar" class="status-bar-premium">
+       <div class="status-item" style="display: flex; flex-direction: column; align-items: center;">
+         <div class="status-label">GAME STATUS</div>
+         <div id="turn-indicator" class="status-value text-gradient">X'S TURN</div>
+         <div id="self-role-badge" class="role-badge spectating">SPECTATING</div>
+       </div>
     </div>
-  </nav>
 
-  <main class="container" style="padding-top: 80px;">
-
-    <!-- Active Game -->
-    <div id="ui-game">
-      <div class="status-bar-visual">
-        <div class="status-left">
-           <div class="status-label">STATUS</div>
-           <div id="turn-indicator" class="status-value">X'S TURN</div>
-        </div>
-        <div id="lobby-info" class="status-right hidden" style="border-left: 1px solid rgba(255,255,255,0.2);">
-           <div class="status-label">LOBBY</div>
-           <div id="lobby-code-display" class="status-value highlight" style="font-size: 1rem;"></div>
-        </div>
-      </div>
-
-      <div class="board" id="board">
-        <div class="cell" data-index="0"></div>
-        <div class="cell" data-index="1"></div>
-        <div class="cell" data-index="2"></div>
-        <div class="cell" data-index="3"></div>
-        <div class="cell" data-index="4"></div>
-        <div class="cell" data-index="5"></div>
-        <div class="cell" data-index="6"></div>
-        <div class="cell" data-index="7"></div>
-        <div class="cell" data-index="8"></div>
-      </div>
-
-      <div class="glass-panel mt-2">
-        <button id="btn-rematch" class="btn btn-coral hidden">Rematch</button>
-      </div>
+    <!-- The Board -->
+    <div class="board" id="board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
     </div>
+
   </main>
 
-  <!-- Rules Modal -->
-  <div id="rules-modal" class="modal hidden">
-    <div class="modal-content text-left">
-      <h2>How to Play Tic-Tac-Toe</h2>
-      <button class="btn-close" id="btn-close-rules">&times;</button>
-      
-      <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
-        <p>A classic game for two players!</p>
-        <ul style="padding-left: 1rem; margin-top: 0.5rem;">
-          <li>Players take turns placing their mark ('X' or 'O') in an empty square on the 3x3 grid.</li>
-          <li>The first player to align 3 of their marks horizontally, vertically, or diagonally wins the game.</li>
-          <li>If all 9 squares are filled and no player has 3 in a row, the game ends in a Draw.</li>
-        </ul>
+  <!-- Bottom Controls Area -->
+  <footer id="footer-trigger" class="game-footer">
+    <div class="sheet-handle"></div>
+  </footer>
+
+  <!-- Interactive Bottom Sheet (Static Persistent mode) -->
+  <div id="control-sheet" class="bottom-sheet static">
+    <div id="sheet-header-close" class="sheet-header">
+      <div class="sheet-handle"></div>
+    </div>
+    
+    <div class="sheet-content">
+      <button id="btn-rules" class="sheet-btn">
+        <span>📖</span>
+        <span>Rules</span>
+      </button>
+      <button id="btn-rematch" class="sheet-btn" style="color: var(--accent-coral);">
+        <span>🔄</span>
+        <span>Rematch</span>
+      </button>
+
+      <!-- Host Seating Control (populated by JS) -->
+      <div id="host-seating-section" class="hidden" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1.5rem;">
+        <h4 style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Match Seating</h4>
+        
+        <div class="seating-grid">
+           <div class="seat-slot">
+              <label>Player X</label>
+              <select id="select-player-x" class="seat-select"></select>
+           </div>
+           <div class="seat-slot">
+              <label>Player O</label>
+              <select id="select-player-o" class="seat-select"></select>
+           </div>
+        </div>
       </div>
-      <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
     </div>
   </div>
 
+</div>
+
+<!-- Overlay to close sheet when clicking outside -->
+<div id="sheet-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:115;"></div>
+
+<!-- Rules Modal -->
+<div id="rules-modal" class="modal hidden">
+  <div class="modal-content text-left">
+    <h2 class="text-gradient">How to Play</h2>
+    <button class="btn-close" id="btn-close-rules">&times;</button>
+    
+    <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
+      <p>A classic game for two players!</p>
+      <ul style="padding-left: 1rem; margin-top: 0.5rem;">
+        <li>Take turns placing your mark ('X' or 'O') in an empty square.</li>
+        <li>The first player to align 3 marks horizontally, vertically, or diagonally wins.</li>
+        <li>If all 9 squares are filled and no player has 3 in a row, it's a Draw.</li>
+      </ul>
+    </div>
+    <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
+  </div>
+</div>
+
   <script src="../../js/notify.js"></script>
-  <script src="game.js"></script>
+  <script src="../../js/lobby-shell.js" type="module"></script>
+  <script src="game.js" type="module"></script>
 </body>
 </html>

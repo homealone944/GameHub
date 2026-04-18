@@ -1,7 +1,6 @@
 // DOM Elements
 const boardEl = document.getElementById('board');
 const clueLogEl = document.getElementById('clue-log');
-
 const activePlayerDisplay = document.getElementById('active-player-display');
 const turnsDotsEl = document.getElementById('turns-dots');
 const agentsFoundEl = document.getElementById('agents-found');
@@ -15,8 +14,8 @@ const clueInputArea = document.getElementById('clue-input-area');
 
 const gameOverBanner = document.getElementById('game-over-banner');
 const gameOverText = document.getElementById('game-over-text');
-const btnNavRematch = document.getElementById('btn-nav-rematch');
 const btnBannerRematch = document.getElementById('btn-banner-rematch');
+const btnSheetRematch = document.getElementById('btn-rematch');
 
 const passOverlay = document.getElementById('pass-device-overlay');
 const btnReady = document.getElementById('btn-ready');
@@ -32,19 +31,25 @@ const btnCloseRules = document.getElementById('btn-close-rules');
 const btnRulesOk = document.getElementById('btn-rules-ok');
 
 const btnCloseSettings = document.getElementById('btn-close-settings');
-const btnSaveSettings = document.getElementById('btn-save-settings');
 const btnSettingsRematch = document.getElementById('btn-settings-rematch');
 const inputTokens = document.getElementById('input-tokens');
 const inputWords = document.getElementById('input-words');
 const inputP1Name = document.getElementById('input-p1-name');
 const inputP2Name = document.getElementById('input-p2-name');
 
+// Players Modal
+const btnPlayers = document.getElementById('btn-profile'); // ID remains for simplicity
+const playersModal = document.getElementById('players-modal');
+const btnClosePlayers = document.getElementById('btn-close-players-modal');
+const btnSavePlayers = document.getElementById('btn-save-players');
+const displayTokens = document.getElementById('display-tokens');
+
 // State
 let config = {
   maxTurns: 9,
   customWords: [],
-  p1Name: "Player 1",
-  p2Name: "Player 2"
+  p1Name: "Agent 1",
+  p2Name: "Agent 2"
 };
 
 let gameState = {
@@ -106,8 +111,8 @@ function processSettingsSave(restart) {
   config.customWords = w;
   localStorage.setItem('cd_words', w.join(','));
   
-  config.p1Name = inputP1Name.value.trim() || "Player 1";
-  config.p2Name = inputP2Name.value.trim() || "Player 2";
+  config.p1Name = inputP1Name.value.trim() || "Agent 1";
+  config.p2Name = inputP2Name.value.trim() || "Agent 2";
   localStorage.setItem('cd_p1_name', config.p1Name);
   localStorage.setItem('cd_p2_name', config.p2Name);
   
@@ -131,7 +136,6 @@ function setupListeners() {
     btnRulesOk.addEventListener('click', () => rulesModal.classList.add('hidden'));
   }
 
-  btnSaveSettings.addEventListener('click', () => processSettingsSave(false));
   btnSettingsRematch.addEventListener('click', () => processSettingsSave(true));
 
   btnReady.addEventListener('click', () => {
@@ -143,11 +147,53 @@ function setupListeners() {
     triggerPassDevice(1, 'intel');
   });
 
+  // Prefill word area
+  if (inputWords && !inputWords.value) {
+    inputWords.value = DEFAULT_WORDS.join(', ');
+  }
+
+  inputTokens.addEventListener('input', () => {
+    displayTokens.innerText = inputTokens.value;
+  });
+
   btnGiveClue.addEventListener('click', submitClue);
   btnEndTurn.addEventListener('click', endGuessingPhase);
   
-  btnNavRematch.addEventListener('click', startNewGame);
   btnBannerRematch.addEventListener('click', startNewGame);
+  btnSheetRematch.addEventListener('click', () => {
+    toggleSheet();
+    startNewGame();
+  });
+
+  // Players Modal
+  btnPlayers.addEventListener('click', () => {
+    inputP1Name.value = config.p1Name;
+    inputP2Name.value = config.p2Name;
+    playersModal.classList.remove('hidden');
+    toggleSheet(); 
+  });
+  btnClosePlayers.addEventListener('click', () => playersModal.classList.add('hidden'));
+  btnSavePlayers.addEventListener('click', () => {
+    config.p1Name = inputP1Name.value.trim() || 'Agent 1';
+    config.p2Name = inputP2Name.value.trim() || 'Agent 2';
+    playersModal.classList.add('hidden');
+    renderUI();
+    if (window.Notify) Notify.toast("Field Agents updated!");
+  });
+
+  // Sheet Toggle
+  const sheetHandle = document.getElementById('sheet-handle');
+  const sheetOverlay = document.getElementById('sheet-overlay');
+  if (sheetHandle) sheetHandle.addEventListener('click', toggleSheet);
+  if (sheetOverlay) sheetOverlay.addEventListener('click', toggleSheet);
+}
+
+function toggleSheet() {
+  const sheet = document.getElementById('control-sheet');
+  const overlay = document.getElementById('sheet-overlay');
+  if (!sheet) return;
+  sheet.classList.toggle('active');
+  if (overlay) overlay.classList.toggle('hidden');
 }
 
 // --- Game Logic ---
@@ -169,7 +215,6 @@ function startNewGame() {
   renderLog();
   
   gameOverBanner.classList.add('hidden');
-  btnNavRematch.classList.add('hidden');
   passOverlay.classList.add('hidden'); // Ensure mask is off so they can see the words 
   
   renderUI(); // Render the board blankly to let them see the words
@@ -228,13 +273,18 @@ function generateKeys() {
 
 function submitClue() {
   if (gameState.gameOver || gameState.phase !== 'intel') return;
-  const word = inputClueWord.value.trim().toUpperCase();
-  const num = inputClueNum.value;
-  if (!word || !num) return;
-
-  const clueStr = `${word} - ${num}`;
+  const word = inputClueWord.value.trim();
+  const num = parseInt(inputClueNum.value);
+  const max = parseInt(inputClueNum.max) || 9;
   
-  gameState.log.unshift({
+  if (!word || isNaN(num) || num < 1 || num > max) {
+    if (window.Notify) Notify.toast(`Valid clue number: 1-${max}`);
+    return;
+  }
+
+  const clueStr = `${word.toUpperCase()}(${num})`;
+  
+  gameState.log.push({
     player: gameState.activePlayer,
     clue: clueStr,
     guesses: []
@@ -260,20 +310,26 @@ function renderLog() {
       guessesHTML = '<div class="log-guesses">';
       entry.guesses.forEach(g => {
         let cls = 'guess-bystander';
-        if (g.type === 'green') cls = 'guess-green';
+        if (g.type === 'agent') cls = 'guess-agent';
         if (g.type === 'assassin') cls = 'guess-assassin';
         guessesHTML += `<div class="guess-pill ${cls}">${g.word}</div>`;
       });
       guessesHTML += '</div>';
     }
 
+    const entryPlayerName = getPlayerName(entry.player);
     el.innerHTML = `
-      <span class="log-player">${getPlayerName(entry.player)}</span>
-      <span class="log-clue">"${entry.clue}"</span>
+      <span class="log-player">${entryPlayerName}</span>
+      <span class="log-clue">${entry.clue}</span>
       ${guessesHTML}
     `;
     clueLogEl.appendChild(el);
   });
+  
+  // Auto-scroll timeline to the right on new entries
+  if (clueLogEl.parentElement) {
+    clueLogEl.parentElement.scrollLeft = clueLogEl.parentElement.scrollWidth;
+  }
 }
 
 function endGuessingPhase() {
@@ -304,7 +360,7 @@ function handleCardClick(index) {
     // Assassin!
     gameState.revealed[index] = 'black';
     if (gameState.log.length > 0) {
-      gameState.log[0].guesses.push({ word: wordStr + " (ASSASSIN!)", type: 'assassin' });
+      gameState.log[gameState.log.length - 1].guesses.push({ word: wordStr, type: 'assassin' });
       renderLog();
     }
     loseGame(`DEFEAT: HIT ASSASSIN '${wordStr}'!`);
@@ -314,7 +370,7 @@ function handleCardClick(index) {
     gameState.revealed[index] = 'green';
     gameState.greensFound++;
     if (gameState.log.length > 0) {
-      gameState.log[0].guesses.push({ word: wordStr, type: 'green' });
+      gameState.log[gameState.log.length - 1].guesses.push({ word: wordStr, type: 'agent' });
       renderLog();
     }
     if (gameState.greensFound >= 15) {
@@ -329,7 +385,7 @@ function handleCardClick(index) {
     gameState.revealed[index] = rev;
     
     if (gameState.log.length > 0) {
-      gameState.log[0].guesses.push({ word: wordStr, type: 'bystander' });
+      gameState.log[gameState.log.length - 1].guesses.push({ word: wordStr, type: 'bystander' });
       renderLog(); 
     }
     
@@ -352,44 +408,50 @@ function handleCardClick(index) {
 function loseGame(reason) {
   gameState.gameOver = true;
   gameOverText.innerText = reason;
-  gameOverText.className = 'lose-text';
+  gameOverText.classList.add('lose-text');
   gameOverBanner.classList.remove('hidden');
-  btnNavRematch.classList.remove('hidden');
 }
 
 function winGame() {
   gameState.gameOver = true;
   gameOverText.innerText = "VICTORY! All agents found!";
-  gameOverText.className = 'win-text';
+  gameOverText.classList.add('win-text');
   gameOverBanner.classList.remove('hidden');
-  btnNavRematch.classList.remove('hidden');
 }
 
 // --- UI Rendering ---
 function renderUI() {
   const name = getPlayerName(gameState.activePlayer);
-  activePlayerDisplay.innerText = gameState.phase === 'setup' ? "LOBBY - REVIEW BOARD" : `${name}: ${gameState.phase}`;
+  activePlayerDisplay.innerText = gameState.phase === 'setup' ? "MISSION START" : `${name}: ${gameState.phase.toUpperCase()}`;
+  activePlayerDisplay.style.color = gameState.activePlayer === 1 ? "#3b82f6" : "#ef4444";
+  
   agentsFoundEl.innerText = gameState.greensFound;
-
-  // Render turn count
-  turnsDotsEl.innerHTML = `<span>${Math.max(0, gameState.turnsLeft)}</span> <span class="muted">/ ${config.maxTurns}</span>`;
+  turnsDotsEl.innerText = `${Math.max(0, gameState.turnsLeft)} / ${config.maxTurns}`;
   
   if (!gameState.gameOver) {
     if (gameState.phase === 'setup') {
       clueInputArea.classList.add('hidden');
       btnEndTurn.classList.add('hidden');
       btnStartGame.classList.remove('hidden');
-      boardEl.classList.remove('intel-phase-board');
     } else if (gameState.phase === 'intel') {
       clueInputArea.classList.remove('hidden');
       btnEndTurn.classList.add('hidden');
       btnStartGame.classList.add('hidden');
-      boardEl.classList.add('intel-phase-board');
+      
+      // Calculate remaining agents for current player's key
+      const myKey = gameState.activePlayer === 1 ? gameState.p1Key : gameState.p2Key;
+      let remaining = 0;
+      for (let i = 0; i < 25; i++) {
+        if (myKey[i] === 1 && (gameState.revealed[i] === null || Array.isArray(gameState.revealed[i]))) {
+          remaining++;
+        }
+      }
+      inputClueNum.max = remaining;
+      if (parseInt(inputClueNum.value) > remaining) inputClueNum.value = remaining;
     } else {
       clueInputArea.classList.add('hidden');
       btnEndTurn.classList.remove('hidden');
       btnStartGame.classList.add('hidden');
-      boardEl.classList.remove('intel-phase-board');
     }
   } else {
     clueInputArea.classList.add('hidden');
@@ -398,49 +460,66 @@ function renderUI() {
   }
 
   renderLog();
+  renderBoard();
+}
 
-  // Render Board
+function renderBoard() {
   boardEl.innerHTML = '';
   const myKey = gameState.activePlayer === 1 ? gameState.p1Key : gameState.p2Key;
-  
+
   for (let i = 0; i < 25; i++) {
-    const card = document.createElement('div');
-    card.innerText = gameState.words[i];
-    card.className = 'card';
-    
-    if (gameState.gameOver) {
-      card.classList.add('revealed');
-      const p1v = gameState.p1Key[i];
-      const p2v = gameState.p2Key[i];
-      if (p1v === 2 || p2v === 2) card.classList.add('black');
-      else if (p1v === 1 || p2v === 1) card.classList.add('green');
-      else card.classList.add('bystander');
-    } else if (gameState.revealed[i] !== null) {
-      const rev = gameState.revealed[i];
-      if (rev === 'green' || rev === 'black') {
-        card.classList.add('revealed');
-        card.classList.add(rev);
-      } else if (Array.isArray(rev)) {
-        card.classList.add('partial-bystander');
-        if (rev.includes('bystander-1')) card.innerHTML += `<div class="bystander-token p1"></div>`;
-        if (rev.includes('bystander-2')) card.innerHTML += `<div class="bystander-token p2"></div>`;
-        if (rev.includes('bystander-1') && rev.includes('bystander-2')) {
-           card.classList.add('revealed');
-           card.classList.add('bystander');
-        }
+    const word = gameState.words[i];
+    const revealed = gameState.revealed[i];
+    const isRevealed = revealed !== null && !Array.isArray(revealed);
+
+    const cardEl = document.createElement('div');
+    cardEl.className = 'card';
+    cardEl.innerText = word;
+
+    // 1. Revealed states (Found for everyone)
+    if (isRevealed) {
+      cardEl.classList.add('revealed', revealed);
+    } else if (Array.isArray(revealed)) {
+      cardEl.classList.add('partial-bystander');
+      if (revealed.includes('bystander-1')) cardEl.innerHTML += `<div class="bystander-token p1"></div>`;
+      if (revealed.includes('bystander-2')) cardEl.innerHTML += `<div class="bystander-token p2"></div>`;
+      if (revealed.includes('bystander-1') && revealed.includes('bystander-2')) {
+         cardEl.classList.remove('partial-bystander');
+         cardEl.classList.add('revealed', 'bystander');
       }
     }
-    
-    if (gameState.revealed[i] === null || Array.isArray(gameState.revealed[i])) {
-      card.addEventListener('click', () => handleCardClick(i));
+
+    // 2. Interaction
+    const canClick = !isRevealed && !(Array.isArray(revealed) && revealed.includes(`bystander-${gameState.activePlayer}`));
+    if (canClick && !gameState.gameOver) {
+       cardEl.addEventListener('click', () => handleCardClick(i));
     }
-    
-    if (gameState.phase === 'intel') {
-      if (myKey[i] === 1) card.classList.add('intel-green');
-      if (myKey[i] === 2) card.classList.add('intel-black');
+
+    // 3. Intel Phase Overlays (Current Player's Key)
+    if (gameState.phase === 'intel' && !gameState.gameOver) {
+       const type = myKey[i];
+       if (type === 1) {
+         cardEl.classList.add('intel-green');
+         // Visually mark as found if it's already green on the board
+         if (isRevealed && revealed === 'green') {
+           cardEl.classList.add('is-found');
+         }
+       } else if (type === 2) {
+         cardEl.classList.add('intel-black');
+       }
     }
-    
-    boardEl.appendChild(card);
+
+    // 4. Game Over Reveal (Full Board)
+    if (gameState.gameOver) {
+       cardEl.classList.add('revealed');
+       const p1Type = gameState.p1Key[i];
+       const p2Type = gameState.p2Key[i];
+       if (p1Type === 2 || p2Type === 2) cardEl.classList.add('black');
+       else if (p1Type === 1 || p2Type === 1) cardEl.classList.add('green');
+       else cardEl.classList.add('bystander');
+    }
+
+    boardEl.appendChild(cardEl);
   }
 }
 

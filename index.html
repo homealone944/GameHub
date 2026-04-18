@@ -16,7 +16,10 @@
   <!-- Top Navigation Header -->
   <header class="app-header">
     <div class="header-logo">
-      <span class="text-gradient logo-text">GameHub</span>
+      <h1 class="text-gradient logo-text">
+        <span class="logo-full">GameHub</span>
+        <span class="logo-short">GH</span>
+      </h1>
     </div>
     <div class="header-user" id="profile-btn">
       <span id="display-username">Guest</span>
@@ -29,24 +32,73 @@
     <!-- Search & Filter Area -->
     <section class="toolbar">
       <div class="search-container">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Search games...">
+         <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Search operations...">
+         </div>
+         <button id="btn-filter-settings" class="btn-toolbar-icon" title="Advanced Filters">
+           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+           </svg>
+         </button>
       </div>
-      
-      <div class="filter-pills" id="filter-container">
-        <button class="pill active" data-filter="All">All</button>
-        <button class="pill" data-filter="Local">Local</button>
-        <button class="pill" data-filter="Online">Online</button>
-        <button class="pill" data-filter="Solo">Solo</button>
-        <button class="pill" data-filter="Multiplayer">Multiplayer</button>
-      </div>
+
+      <!-- Active Filters Ribbon -->
+      <div id="active-filters-ribbon" style="display:flex; gap:0.5rem; flex-wrap:wrap; min-height: 24px;"></div>
+
+      <nav class="category-nav">
+         <button class="pill active" data-filter="All">All</button>
+         <button class="pill" data-filter="Lobby">Lobby</button>
+         <button class="pill" data-filter="Solo">Solo</button>
+         <button class="pill" data-filter="Local">Local</button>
+         <button class="pill" data-filter="Online">Online</button>
+         <button class="pill" data-filter="Coming Soon">Coming Soon</button>
+      </nav>
     </section>
+
+    <div id="filter-modal-overlay" class="modal hidden">
+      <div class="modal-content">
+         <h2 style="margin-bottom: 1.5rem;">Game Filters</h2>
+         <button class="btn-close" id="btn-close-filter">&times;</button>
+         
+         <div style="display:flex; flex-direction: column; gap: 1.5rem; text-align: left;">
+           <div>
+              <label style="color:var(--text-secondary); font-size:0.75rem; font-weight: 800; letter-spacing: 1px; display:block; margin-bottom:0.75rem; text-transform: uppercase;">Engagement Mode</label>
+              <select id="filter-select-mode" style="width:100%; padding:0.8rem; border-radius:12px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.1); outline: none;">
+                 <option value="Any" style="background: var(--bg-card); color: white;">Any Mode</option>
+                 <option value="Local" style="background: var(--bg-card); color: white;">Local Multiplayer</option>
+                 <option value="Online" style="background: var(--bg-card); color: white;">Online Multiplayer</option>
+                 <option value="Solo" style="background: var(--bg-card); color: white;">Solo</option>
+              </select>
+           </div>
+           <div>
+              <label style="color:var(--text-secondary); font-size:0.75rem; font-weight: 800; letter-spacing: 1px; display:flex; justify-content:space-between; margin-bottom:0.75rem; text-transform: uppercase;">
+                <span>Team Size Range</span>
+                <span id="player-range-val" style="color:var(--accent-mint);">1 - 10</span>
+              </label>
+              
+              <div class="dual-range-container">
+                 <div class="dual-range-track"></div>
+                 <input type="range" id="filter-min-players" min="1" max="10" value="1" step="1" class="range-input">
+                 <input type="range" id="filter-max-players" min="1" max="10" value="10" step="1" class="range-input">
+              </div>
+           </div>
+         </div>
+         
+         <div style="display:flex; flex-direction: column; gap: 0.75rem; margin-top: 2rem;">
+            <button id="btn-filter-apply" class="btn btn-mint w-100">Apply Filter</button>
+            <button id="btn-filter-clear-all" class="btn btn-secondary w-100" style="font-size:0.8rem;">Reset All</button>
+         </div>
+      </div>
+    </div>
     
-    <!-- Dynamic Grid injected by hub.js -->
-    <div class="game-grid" id="game-grid">
-      <!-- Cards rendered here -->
+    <!-- Dynamic Content injected by hub.js -->
+    <div id="hub-main-content">
+       <!-- Sections or Grid rendered here -->
     </div>
   </main>
+
+  <!-- Online Side Panel is now dynamically injected by lobby-shell.js -->
 
   <!-- User Profile Modal -->
   <div id="profile-modal" class="modal hidden">
@@ -79,6 +131,7 @@
   </div>
 
   <script src="./js/notify.js"></script>
-  <script src="./js/hub.js"></script>
+  <script src="./js/lobby-shell.js" type="module"></script>
+  <script src="./js/hub.js" type="module"></script>
 </body>
 </html>
