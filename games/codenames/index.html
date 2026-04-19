@@ -38,6 +38,7 @@
        <div class="status-item">
          <div class="status-label">STATUS</div>
          <div id="active-player-display" class="status-value highlight" style="font-size: 1rem;">AGENT 1: INTEL</div>
+         <div id="self-role-badge" class="role-badge spectating">SPECTATING</div>
        </div>
        <div class="status-item">
          <div class="status-label">TURNS LEFT</div>
@@ -108,6 +109,22 @@
         <span>🔄</span>
         <span>Restart</span>
       </button>
+
+      <!-- Host Seating Control -->
+      <div id="host-seating-section" class="hidden" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1.5rem;">
+        <h4 style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Match Seating</h4>
+        
+        <div class="seating-grid">
+           <div class="seat-slot">
+              <label>Agent 1</label>
+              <select id="select-agent-1" class="seat-select"></select>
+           </div>
+           <div class="seat-slot">
+              <label>Agent 2</label>
+              <select id="select-agent-2" class="seat-select"></select>
+           </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -186,7 +203,7 @@
     <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.9rem; max-height: 50vh; overflow-y: auto;">
       <p>Identify all 15 green agent words before running out of turns!</p>
       <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); margin: 1rem 0;">
-      <p><strong>Intel Phase:</strong> Look at your half of the board. Give a one-word clue and a number that relates to green words you see.</p>
+      <p><strong>Intel Phase:</strong> Look at your board. Give a one-word clue and a number that relates to green bordered words you see.</p>
       <p><strong>Guessing Phase:</strong> Your partner guesses based on your clue.</p>
       <ul style="padding-left: 1rem; margin-top: 0.5rem; color: var(--text-secondary);">
         <li><strong style="color:var(--accent-mint);">Green Agent:</strong> Correct! Keep guessing or pass.</li>
@@ -202,6 +219,6 @@
   <script src="../../js/notify.js"></script>
   <script src="../../js/lobby-shell.js" type="module"></script>
   <script src="words.js"></script>
-  <script src="game.js"></script>
+  <script src="game.js" type="module"></script>
 </body>
 </html>
