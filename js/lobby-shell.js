@@ -133,7 +133,6 @@ function injectSidebarHTML() {
        <div id="lobby-connected-ui" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;">
           <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center; position: relative; flex-shrink: 0;">
              <span id="display-lobby-name" style="color: white; font-weight:bold; font-size: 1.1rem; display:block;">My Lobby</span>
-             <button id="hub-btn-edit-lobby" class="btn hidden" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px;" title="Edit Settings">⚙️</button>
              <span style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; margin-top:5px; display:block;">Code: <span id="current-lobby-code" class="text-gradient" style="font-weight: 900; letter-spacing: 2px;">${LOBBY_ID || ''}</span></span>
           </div>
           
@@ -147,16 +146,18 @@ function injectSidebarHTML() {
              </label>
              <input type="range" id="edit-max-players-range" min="2" max="10" value="4" step="1" class="w-100" style="margin-bottom: 1rem; accent-color: var(--accent-coral);">
              
-             <label style="font-size: 0.8rem; color: var(--text-secondary); display:flex; align-items:center; gap: 0.5rem; margin-bottom:1rem; cursor:pointer;">
-               <input type="checkbox" id="edit-lobby-locked" style="accent-color: var(--accent-coral); transform: scale(1.2);"> Lock Lobby
-             </label>
-             
              <button id="hub-btn-save-edit" class="btn btn-mint w-100">Save Changes</button>
              <button id="hub-btn-cancel-edit" class="btn btn-secondary w-100 mt-1" style="font-size: 0.8rem; padding: 0.4rem;">Cancel</button>
           </div>
 
           <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
-             <h3 id="display-player-count" style="font-size: 0.9rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 0.5rem; flex-shrink: 0;">Players</h3>
+             <h3 style="font-size: 0.9rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 0.5rem; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+                <span id="display-player-count">Players</span>
+                <div id="host-quick-actions" class="hidden" style="display: flex; gap: 0.5rem;">
+                   <button id="hub-btn-toggle-lock" class="btn" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px;" title="Toggle Lock">🔓</button>
+                   <button id="hub-btn-edit-lobby" class="btn" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px;" title="Edit Settings">⚙️</button>
+                </div>
+             </h3>
              <ul id="lobby-player-list" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; flex: 1;"></ul>
           </div>
 
@@ -188,11 +189,12 @@ function bindDOM() {
     playerCount: document.getElementById('display-player-count'),
     playerList: document.getElementById('lobby-player-list'),
     editToggle: document.getElementById('hub-btn-edit-lobby'),
+    btnLock: document.getElementById('hub-btn-toggle-lock'),
+    hostActions: document.getElementById('host-quick-actions'),
     editPanel: document.getElementById('host-edit-panel'),
     inputEditName: document.getElementById('edit-lobby-name'),
     sliderEditMax: document.getElementById('edit-max-players-range'),
     displayEditMaxVal: document.getElementById('edit-max-players-val'),
-    checkEditLocked: document.getElementById('edit-lobby-locked'),
     btnSaveEdit: document.getElementById('hub-btn-save-edit'),
     btnCancelEdit: document.getElementById('hub-btn-cancel-edit'),
     msgPanel: document.getElementById('host-messaging-panel'),
@@ -206,11 +208,19 @@ function bindDOM() {
 function setupListeners() {
   if (dom.editToggle) {
     dom.editToggle.addEventListener('click', () => {
-      dom.editPanel.classList.remove('hidden');
+      dom.editPanel.classList.toggle('hidden');
       dom.inputEditName.value = window.currentLobbyData.name;
       dom.sliderEditMax.value = window.currentLobbyData.maxPlayers;
       dom.displayEditMaxVal.innerText = window.currentLobbyData.maxPlayers;
-      dom.checkEditLocked.checked = !!window.currentLobbyData.isLocked;
+    });
+  }
+
+  if (dom.btnLock) {
+    dom.btnLock.addEventListener('click', async () => {
+       const isLocked = !!window.currentLobbyData.isLocked;
+       await updateLobbySettings(LOBBY_ID, {
+          isLocked: !isLocked
+       });
     });
   }
 
@@ -229,8 +239,7 @@ function setupListeners() {
       }
       await updateLobbySettings(LOBBY_ID, {
         name: dom.inputEditName.value.trim() || 'My Lobby',
-        maxPlayers: newMax,
-        isLocked: dom.checkEditLocked.checked
+        maxPlayers: newMax
       });
       dom.editPanel.classList.add('hidden');
     });
@@ -497,13 +506,19 @@ function renderUI(data) {
   
   const cap = data.maxPlayers || '?';
   const cur = data.players ? data.players.length : 0;
-  dom.playerCount.innerText = `Players (${cur}/${cap})${data.isLocked ? ' 🔒' : ''}`;
+  dom.playerCount.innerText = `Players (${cur}/${cap})`;
 
   // Host Privilege UI
   dom.btnDelete.classList.toggle('hidden', !isHost);
   dom.btnLeave.classList.toggle('hidden', isHost);
   dom.msgPanel.classList.toggle('hidden', !isHost);
-  dom.editToggle.classList.toggle('hidden', !isHost);
+  dom.hostActions.classList.toggle('hidden', !isHost);
+
+  // Update Lock Icon
+  if (dom.btnLock) {
+    dom.btnLock.innerText = data.isLocked ? "🔒" : "🔓";
+    dom.btnLock.title = data.isLocked ? "Unlock Lobby" : "Lock Lobby";
+  }
 
   // Player List
   dom.playerList.innerHTML = '';
