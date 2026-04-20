@@ -16,7 +16,7 @@
 
 <div class="game-viewport">
   
-  <!-- Top Bar -->
+  <!-- Premium Top Bar -->
   <header class="game-header">
     <div class="nav-left">
       <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">
@@ -35,11 +35,11 @@
     
     <!-- Premium Status Bar -->
     <div id="game-status-bar" class="status-bar-premium">
-       <div class="status-item" style="display: flex; flex-direction: column; align-items: center;">
-         <div class="status-label">GAME STATUS</div>
-         <div id="turn-indicator" class="status-value text-gradient">X'S TURN</div>
-         <div id="self-role-badge" class="role-badge spectating">SPECTATING</div>
-       </div>
+        <div class="status-item">
+          <div class="status-label">GAME STATUS</div>
+          <div id="turn-indicator" class="status-value text-gradient">WAITING...</div>
+          <div id="self-role-badge" class="role-badge spectating">SPECTATING</div>
+        </div>
     </div>
 
     <!-- The Board -->
@@ -57,14 +57,14 @@
 
   </main>
 
-  <!-- Bottom Controls Area -->
+  <!-- Sliding Bottom Sheet Trigger -->
   <footer id="footer-trigger" class="game-footer">
     <div class="sheet-handle"></div>
   </footer>
 
-  <!-- Interactive Bottom Sheet (Static Persistent mode) -->
-  <div id="control-sheet" class="bottom-sheet static">
-    <div id="sheet-header-close" class="sheet-header">
+  <!-- Interactive Bottom Sheet -->
+  <div id="control-sheet" class="bottom-sheet">
+    <div id="sheet-header-close" class="sheet-header" style="cursor: pointer;">
       <div class="sheet-handle"></div>
     </div>
     
@@ -73,33 +73,25 @@
         <span>📖</span>
         <span>Rules</span>
       </button>
-      <button id="btn-rematch" class="sheet-btn" style="color: var(--accent-coral);">
+      <button id="btn-players" class="sheet-btn">
+        <span>👥</span>
+        <span>Players</span>
+      </button>
+      <button id="btn-settings" class="sheet-btn host-only">
+        <span>⚙️</span>
+        <span>Settings</span>
+      </button>
+      <button id="btn-rematch" class="sheet-btn host-only" style="color: var(--accent-coral);">
         <span>🔄</span>
         <span>Rematch</span>
       </button>
-
-      <!-- Host Seating Control (populated by JS) -->
-      <div id="host-seating-section" class="hidden" style="width: 100%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1.5rem;">
-        <h4 style="color: var(--text-secondary); font-size: 0.75rem; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Match Seating</h4>
-        
-        <div class="seating-grid">
-           <div class="seat-slot">
-              <label>Player X</label>
-              <select id="select-player-x" class="seat-select"></select>
-           </div>
-           <div class="seat-slot">
-              <label>Player O</label>
-              <select id="select-player-o" class="seat-select"></select>
-           </div>
-        </div>
-      </div>
     </div>
   </div>
 
-</div>
+  <!-- Overlay to close sheet when clicking outside -->
+  <div id="sheet-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:115;"></div>
 
-<!-- Overlay to close sheet when clicking outside -->
-<div id="sheet-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:115;"></div>
+</div>
 
 <!-- Rules Modal -->
 <div id="rules-modal" class="modal hidden">
