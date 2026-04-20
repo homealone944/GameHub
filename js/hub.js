@@ -107,16 +107,23 @@ function setupLobbyBindings() {
    }
 
    btnConfirmCreate.addEventListener('click', async () => {
-     const name = inputLobbyName.value.trim() || 'My Party';
+     const lobbyName = inputLobbyName.value.trim() || 'My Party';
      const maxP = parseInt(sliderMaxPlayers.value) || 4;
-     const uName = localStorage.getItem('gh_username') || 'Guest';
+     
+     const profile = window.profileManager ? window.profileManager.getProfile() : { 
+       name: localStorage.getItem('gh_username') || generateRandomName(),
+       icon: localStorage.getItem('gh_usericon') || '👤',
+       color: '#252525'
+     };
      
      btnConfirmCreate.innerText = 'Creating...';
      try {
        const lid = await createUniversalLobby({
-         name: name,
+         name: lobbyName,
          hostId: CLIENT_ID,
-         hostPlayerName: uName,
+         hostPlayerName: profile.name,
+         hostIcon: profile.icon,
+         hostColor: profile.color,
          maxPlayers: maxP
        });
        window.location.search = `?lobby=${lid}`;
@@ -129,9 +136,20 @@ function setupLobbyBindings() {
    btnJoinLobby.addEventListener('click', async () => {
      const code = inputJoinCode.value.trim().toUpperCase();
      if(code.length !== 4) return;
-     const uName = localStorage.getItem('gh_username') || 'Guest';
+     
+     const profile = window.profileManager ? window.profileManager.getProfile() : { 
+       name: localStorage.getItem('gh_username') || generateRandomName(),
+       icon: localStorage.getItem('gh_usericon') || '👤',
+       color: '#252525'
+     };
+     
      try {
-       await joinLobby(code, { id: CLIENT_ID, name: uName });
+       await joinLobby(code, { 
+         id: CLIENT_ID, 
+         name: profile.name,
+         icon: profile.icon,
+         color: profile.color
+       });
        window.location.search = `?lobby=${code}`;
      } catch(e) {
        if(window.Notify) window.Notify.toast("Join Failed: " + e.message);

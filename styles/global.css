@@ -366,6 +366,7 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
+  justify-items: center;
   text-align: left;
 }
 
@@ -574,26 +575,22 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
 /* Profile Modal Redesign (Horizontal Layout) */
 .profile-header-row {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: 0.5rem;
   align-items: center;
   text-align: left;
 }
 
 .avatar-preview-wrapper {
   position: relative;
-  width: 100px;
-  height: 100px;
-  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  cursor: default;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
-  border: 4px solid rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.05);
   box-shadow: var(--shadow-md);
   transition: transform 0.2s;
-}
-.avatar-preview-wrapper:hover {
-  transform: scale(1.05);
 }
 
 .user-avatar-large {
@@ -602,7 +599,7 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 3.5rem;
+  font-size: 1.5rem;
   background: var(--bg-card);
   border-radius: 50%;
   transition: all 0.3s;
@@ -641,14 +638,34 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
   to { opacity: 1; transform: translateY(0); }
 }
 
-.icon-grid, .color-grid {
+.icon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  max-height: 110px;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
-.icon-bubble, .color-dot {
+.icon-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.icon-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.icon-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.icon-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.icon-bubble {
   width: 42px;
   height: 42px;
   display: flex;

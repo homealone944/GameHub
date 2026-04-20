@@ -38,6 +38,7 @@ function initLobbyShell() {
   // Initialize Global Profile Logic
   const isHub = !window.location.pathname.includes('/games/');
   const pm = new ProfileManager(isHub);
+  window.profileManager = pm;
   pm.init();
   
   // Make Hub/Logo links lobby-aware
@@ -93,7 +94,7 @@ function injectSidebarHTML() {
     <input type="checkbox" id="online-toggle" class="online-toggle-checkbox hidden" style="display:none;">
     <label for="online-toggle" class="online-drawer-toggle">
       <span style="font-size: 1.2rem;">🌐</span>
-      <span id="drawer-label-text" class="drawer-label-text">Lobby</span>
+      <span id="drawer-label-text" class="drawer-label-text">Online</span>
     </label>
     <div class="online-drawer" style="overflow: hidden;">
        <h2 class="text-gradient" style="font-size: 1.8rem; margin-bottom: 0.5rem; flex-shrink: 0;">Online Lobby</h2>
@@ -122,18 +123,21 @@ function injectSidebarHTML() {
             <div id="lobby-divider-or" class="divider mt-2 mb-2" style="width: 100%; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); line-height: 0.1em; margin: 15px 0 20px;">
                <span style="background: var(--bg-card); padding: 0 10px; color: var(--text-secondary); font-size: 0.8rem;">OR</span>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="text" id="hub-input-lobby" placeholder="CODE" maxlength="4" style="flex: 1; padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-primary); color: white; text-transform: uppercase; font-weight: bold; text-align: center; letter-spacing: 2px;">
-              <button id="hub-btn-join-lobby" class="btn btn-mint">Join</button>
+            <div style="display: flex; gap: 0.5rem; width: 100%; box-sizing: border-box;">
+              <input type="text" id="hub-input-lobby" placeholder="CODE" maxlength="4" style="flex: 1; min-width: 0; padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-primary); color: white; text-transform: uppercase; font-weight: bold; text-align: center; letter-spacing: 2px; outline: none;">
+              <button id="hub-btn-join-lobby" class="btn btn-mint" style="flex-shrink: 0; white-space: nowrap;">Join</button>
             </div>
           </div>
        </div>
 
        <!-- CONNECTED UI -->
-       <div id="lobby-connected-ui" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;">
+       <div id="lobby-connected-ui" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0; overflow-y: hidden; overflow-x: hidden;">
           <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center; position: relative; flex-shrink: 0;">
              <span id="display-lobby-name" style="color: white; font-weight:bold; font-size: 1.1rem; display:block;">My Lobby</span>
-             <span style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; margin-top:5px; display:block;">Code: <span id="current-lobby-code" class="text-gradient" style="font-weight: 900; letter-spacing: 2px;">${LOBBY_ID || ''}</span></span>
+             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 5px;">
+                <span style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">Code: <span id="current-lobby-code" class="text-gradient" style="font-weight: 900; letter-spacing: 2px;">${LOBBY_ID || ''}</span></span>
+                <button id="hub-btn-copy-code" class="btn" style="background: rgba(255,255,255,0.1); border: none; font-size: 0.8rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; color: white;" title="Copy Code">📋</button>
+             </div>
           </div>
           
           <div id="host-edit-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex-shrink: 0;">
@@ -187,6 +191,7 @@ function bindDOM() {
     drawerLabelText: document.getElementById('drawer-label-text'),
     lobbyName: document.getElementById('display-lobby-name'),
     playerCount: document.getElementById('display-player-count'),
+    btnCopyCode: document.getElementById('hub-btn-copy-code'),
     playerList: document.getElementById('lobby-player-list'),
     editToggle: document.getElementById('hub-btn-edit-lobby'),
     btnLock: document.getElementById('hub-btn-toggle-lock'),
@@ -206,6 +211,15 @@ function bindDOM() {
 }
 
 function setupListeners() {
+  if (dom.btnCopyCode) {
+    dom.btnCopyCode.addEventListener('click', () => {
+      if (!LOBBY_ID) return;
+      navigator.clipboard.writeText(LOBBY_ID).then(() => {
+        if (window.Notify) window.Notify.toast("Lobby code copied to clipboard!", 3000);
+      });
+    });
+  }
+
   if (dom.editToggle) {
     dom.editToggle.addEventListener('click', () => {
       dom.editPanel.classList.toggle('hidden');
@@ -489,7 +503,7 @@ function handleGlobalRedirection(data) {
 function renderUnconnectedUI() {
   if (dom.viewConnected) dom.viewConnected.classList.add('hidden');
   if (dom.viewUnconnected) dom.viewUnconnected.classList.remove('hidden');
-  if (dom.drawerLabelText) dom.drawerLabelText.innerText = "LOBBY";
+  if (dom.drawerLabelText) dom.drawerLabelText.innerText = "ONLINE";
 }
 
 function renderUI(data) {
@@ -524,8 +538,7 @@ function renderUI(data) {
   dom.playerList.innerHTML = '';
   data.players.forEach(p => {
     const li = document.createElement('li');
-    li.style = "padding: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; background: " + (p.id === data.hostId ? "rgba(59, 130, 246, 0.1)" : "rgba(255, 255, 255, 0.05)");
-    if (p.id === data.hostId) li.style.borderLeft = "3px solid #3b82f6";
+    li.style = "padding: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05);";
     
     let controls = null;
     if (isHost && p.id !== CLIENT_ID) {
@@ -616,11 +629,8 @@ function injectGlobalProfile() {
           
           <div class="modal-actions mt-2" style="align-items: stretch;">
             <div class="profile-header-row">
-               <div class="avatar-preview-wrapper" id="btn-edit-avatar">
+               <div class="avatar-preview-wrapper" style="cursor: default;">
                   <div id="modal-avatar-preview" class="user-avatar-large">👤</div>
-                  <div class="avatar-edit-overlay">
-                     <span style="font-size: 1.5rem;">✏️</span>
-                  </div>
                </div>
                
                <div class="profile-info-column" style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; justify-content: center;">
@@ -629,12 +639,9 @@ function injectGlobalProfile() {
                </div>
             </div>
 
-            <div id="avatar-customizer" class="customizer-panel hidden">
+            <div id="avatar-customizer" class="customizer-panel">
               <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Select Icon</label>
               <div id="icon-selector" class="icon-grid"></div>
-
-              <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Background Color</label>
-              <div id="color-selector" class="color-grid"></div>
             </div>
 
             <button id="btn-save-profile" class="btn btn-mint mt-2 w-100" style="padding: 1rem; font-weight: bold; font-size: 1rem;">Save Changes</button>
