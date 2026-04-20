@@ -21,10 +21,7 @@
         <span class="logo-short">GH</span>
       </h1>
     </div>
-    <div class="header-user" id="profile-btn">
-      <span id="display-username">Guest</span>
-      <div class="user-avatar">👤</div>
-    </div>
+    <div class="header-right"></div>
   </header>
 
   <main class="container page-content">
@@ -98,37 +95,7 @@
     </div>
   </main>
 
-  <!-- Online Side Panel is now dynamically injected by lobby-shell.js -->
-
-  <!-- User Profile Modal -->
-  <div id="profile-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Edit User Profile</h2>
-      <button class="btn-close" id="btn-close-profile">&times;</button>
-      
-      <div class="modal-actions mt-2">
-        <input type="text" id="input-username" placeholder="Enter your username" maxlength="15" class="w-100">
-        <button id="btn-save-profile" class="btn btn-mint mt-1 w-100">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Online Join/Create Modal -->
-  <div id="online-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2 id="modal-game-title">Play Game Online</h2>
-      <button class="btn-close" id="btn-close-online">&times;</button>
-      
-      <div class="modal-actions mt-2">
-        <button id="modal-btn-host" class="btn btn-coral w-100">Create New Lobby</button>
-        <div class="divider"><span>OR</span></div>
-        <div class="join-section w-100">
-          <input type="text" id="modal-input-lobby" placeholder="Enter Lobby Code" maxlength="4">
-          <button id="modal-btn-join" class="btn btn-mint">Join</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Side Panels and Modals are now dynamically injected by lobby-shell.js -->
 
   <script src="./js/notify.js"></script>
   <script src="./js/lobby-shell.js" type="module"></script>

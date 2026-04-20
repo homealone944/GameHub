@@ -36,8 +36,8 @@ export const GAMES_CATALOG = [
   //   maxPlayers: 1
   // },
   {
-    id: 'codenames',
-    title: 'Codenames',
+    id: 'codenames-duet',
+    title: 'Codenames Duet',
     icon: '🕵️',
     desc: 'Cooperative word deduction game.',
     tags: ['Local', 'Online', 'Co-op', 'Multiplayer'],

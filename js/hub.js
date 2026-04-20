@@ -1,5 +1,5 @@
 /* js/hub.js */
-import { createUniversalLobby, joinLobby, leaveLobby, deleteLobby, setLobbyGame, subscribeToLobby, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote } from './database-manager.js';
+import { createUniversalLobby, joinLobby, leaveLobby, deleteLobby, setLobbyGame, subscribeToLobby, changeHost, broadcastMessage, updatePlayerProfile, updateLobbySettings, setVote } from './database-manager.js';
 import { GAMES_CATALOG } from './catalog.js';
 import { generateRandomName } from './names.js';
 
@@ -148,10 +148,7 @@ function setupLobbyBindings() {
 
 
 function initUser() {
-  const savedName = localStorage.getItem('gh_username');
-  if (savedName) {
-    displayUsername.innerText = savedName;
-  }
+  // Logic migrated to profile-manager.js
 }
 
 function setupListeners() {
@@ -229,36 +226,7 @@ function setupListeners() {
     renderCards();
   });
 
-  // Profile Modal
-  profileBtn.addEventListener('click', () => {
-    inputUsername.value = localStorage.getItem('gh_username') || '';
-    profileModal.classList.remove('hidden');
-  });
-
-  btnCloseProfile.addEventListener('click', () => {
-    profileModal.classList.remove('hidden');
-  });
-
-  btnSaveProfile.addEventListener('click', async () => {
-    let newName = inputUsername.value.trim();
-    
-    // Default to a new random name if completely cleared
-    if (!newName) {
-       newName = generateRandomName();
-       localStorage.setItem('gh_username', newName);
-    } else {
-       localStorage.setItem('gh_username', newName);
-    }
-
-    displayUsername.innerText = newName;
-    profileModal.classList.add('hidden');
-    
-    // Reactive Update to Firebase if currently locked in a Lobby
-    if (window.currentLobbyId) {
-       await updatePlayerName(window.currentLobbyId, window.CLIENT_ID, newName);
-    }
-  });
-
+  // Profile Modal logic migrated to profile-manager.js
 }
 
 function applyQuickFilter(type) {

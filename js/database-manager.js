@@ -50,7 +50,7 @@ export async function createUniversalLobby(hostConfig) {
     name: hostConfig.name,
     hostId: hostConfig.hostId,
     maxPlayers: hostConfig.maxPlayers,
-    players: [{ id: hostConfig.hostId, name: hostConfig.hostPlayerName }],
+    players: [{ id: hostConfig.hostId, name: hostConfig.hostPlayerName, icon: hostConfig.hostIcon || '👤', color: hostConfig.hostColor || '#252525' }],
     currentGame: "STAGING",
     gameState: {},
     votes: {},
@@ -196,9 +196,9 @@ export async function setVote(lobbyId, gameId, playerId) {
 }
 
 /**
- * Updates a player's display name if they edit their profile
+ * Updates a player's profile (name & icon) if they edit their profile
  */
-export async function updatePlayerName(lobbyId, playerId, newName) {
+export async function updatePlayerProfile(lobbyId, playerId, profileData) {
   const lobbyRef = doc(db, "lobbies", lobbyId);
   const snap = await getDoc(lobbyRef);
   if (!snap.exists()) return;
@@ -208,7 +208,8 @@ export async function updatePlayerName(lobbyId, playerId, newName) {
   const newPlayers = data.players.map(p => {
      if (p.id === playerId) {
         changed = true;
-        return { ...p, name: newName };
+        // Merge name and icon
+        return { ...p, ...profileData };
      }
      return p;
   });

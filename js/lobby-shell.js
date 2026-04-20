@@ -1,5 +1,6 @@
 /* js/lobby-shell.js */
-import { subscribeToLobby, leaveLobby, deleteLobby, setLobbyGame, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote, touchLobby, getAllLobbies } from './database-manager.js';
+import { subscribeToLobby, leaveLobby, deleteLobby, setLobbyGame, changeHost, broadcastMessage, updatePlayerProfile, updateLobbySettings, setVote, touchLobby, getAllLobbies } from './database-manager.js';
+import { ProfileManager } from './profile-manager.js';
 
 // Client Session ID (shared across all pages via localStorage)
 let CLIENT_ID = localStorage.getItem('gh_clientId');
@@ -30,8 +31,14 @@ initLobbyShell();
 
 function initLobbyShell() {
   injectSidebarHTML();
+  injectGlobalProfile();
   bindDOM();
   setupListeners();
+  
+  // Initialize Global Profile Logic
+  const isHub = !window.location.pathname.includes('/games/');
+  const pm = new ProfileManager(isHub);
+  pm.init();
   
   // Make Hub/Logo links lobby-aware
   makeLinksLobbyAware();
@@ -88,13 +95,13 @@ function injectSidebarHTML() {
       <span style="font-size: 1.2rem;">🌐</span>
       <span id="drawer-label-text" class="drawer-label-text">Lobby</span>
     </label>
-    <div class="online-drawer">
-       <h2 class="text-gradient" style="font-size: 1.8rem; margin-bottom: 0.5rem;">Online Lobby</h2>
-       <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4;">Gather your friends in a lobby room before selecting a game to play together.</p>
-       <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
+    <div class="online-drawer" style="overflow: hidden;">
+       <h2 class="text-gradient" style="font-size: 1.8rem; margin-bottom: 0.5rem; flex-shrink: 0;">Online Lobby</h2>
+       <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4; flex-shrink: 0;">Gather your friends in a lobby room before selecting a game to play together.</p>
+       <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0; flex-shrink: 0;">
        
        <!-- UNCONNECTED UI -->
-       <div id="lobby-unconnected-ui" class="hidden">
+       <div id="lobby-unconnected-ui" class="hidden" style="overflow-y: auto; overflow-x: hidden; flex: 1;">
           <button id="hub-btn-open-create" class="btn btn-coral w-100">Create New Lobby</button>
           
           <div id="create-lobby-form" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
@@ -123,14 +130,14 @@ function injectSidebarHTML() {
        </div>
 
        <!-- CONNECTED UI -->
-       <div id="lobby-connected-ui" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; overflow-y: auto;">
-          <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center; position: relative;">
+       <div id="lobby-connected-ui" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;">
+          <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center; position: relative; flex-shrink: 0;">
              <span id="display-lobby-name" style="color: white; font-weight:bold; font-size: 1.1rem; display:block;">My Lobby</span>
              <button id="hub-btn-edit-lobby" class="btn hidden" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px;" title="Edit Settings">⚙️</button>
              <span style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; margin-top:5px; display:block;">Code: <span id="current-lobby-code" class="text-gradient" style="font-weight: 900; letter-spacing: 2px;">${LOBBY_ID || ''}</span></span>
           </div>
           
-          <div id="host-edit-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+          <div id="host-edit-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex-shrink: 0;">
              <label style="font-size: 0.8rem; color: var(--text-secondary); display:block; margin-bottom:4px;">Edit Name</label>
              <input type="text" id="edit-lobby-name" class="w-100" style="padding: 0.5rem; border-radius: 6px; background: var(--bg-primary); color: white; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 0.75rem;" maxlength="20">
              
@@ -148,12 +155,12 @@ function injectSidebarHTML() {
              <button id="hub-btn-cancel-edit" class="btn btn-secondary w-100 mt-1" style="font-size: 0.8rem; padding: 0.4rem;">Cancel</button>
           </div>
 
-          <div>
-             <h3 id="display-player-count" style="font-size: 0.9rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Players</h3>
-             <ul id="lobby-player-list" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
+          <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+             <h3 id="display-player-count" style="font-size: 0.9rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 0.5rem; flex-shrink: 0;">Players</h3>
+             <ul id="lobby-player-list" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; flex: 1;"></ul>
           </div>
 
-          <div id="host-messaging-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+          <div id="host-messaging-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex-shrink: 0;">
              <label style="font-size: 0.8rem; color: var(--accent-coral); display:block; margin-bottom:4px; font-weight:bold;">Host Broadcast</label>
              <div style="display: flex; gap: 0.5rem;">
                <input type="text" id="hub-input-host-msg" placeholder="Message..." style="flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-primary); color: white; width: 50%;">
@@ -161,8 +168,10 @@ function injectSidebarHTML() {
              </div>
           </div>
 
-          <button id="hub-btn-leave-lobby" class="btn btn-secondary w-100" style="margin-top: auto;">Leave Lobby</button>
-          <button id="hub-btn-delete-lobby" class="btn btn-coral w-100 hidden" style="margin-top: auto;">Delete Lobby</button>
+          <div style="flex-shrink: 0; margin-top: auto;">
+             <button id="hub-btn-leave-lobby" class="btn btn-secondary w-100">Leave Lobby</button>
+             <button id="hub-btn-delete-lobby" class="btn btn-coral w-100 hidden">Delete Lobby</button>
+          </div>
        </div>
     </div>
   `;
@@ -247,7 +256,8 @@ function setupListeners() {
         }
 
         const uName = localStorage.getItem('gh_username') || 'Guest';
-        await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName });
+        const uIcon = localStorage.getItem('gh_usericon') || '👤';
+        await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName, icon: uIcon });
         handleLobbyClosure(null); // Silent exit
     });
   }
@@ -374,7 +384,8 @@ function makeLinksLobbyAware() {
             confirmText: "Leave",
             onConfirm: async () => {
               const uName = localStorage.getItem('gh_username') || 'Guest';
-              await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName });
+              const uIcon = localStorage.getItem('gh_usericon') || '👤';
+              await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName, icon: uIcon });
               window.location.href = targetUrl;
             }
           });
@@ -525,11 +536,97 @@ function renderUI(data) {
        controls = controlsDiv;
     }
 
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = "mini-avatar";
+    avatarDiv.innerText = p.icon || "👤";
+    avatarDiv.style.backgroundColor = p.color || "var(--bg-card)";
+    avatarDiv.style.width = "24px";
+    avatarDiv.style.height = "24px";
+    avatarDiv.style.borderRadius = "50%";
+    avatarDiv.style.display = "flex";
+    avatarDiv.style.alignItems = "center";
+    avatarDiv.style.justifyContent = "center";
+    avatarDiv.style.fontSize = "0.9rem";
+    avatarDiv.style.flexShrink = "0";
+
+    // Host Badge
+    if (p.id === data.hostId) {
+      const badge = document.createElement('div');
+      badge.className = "mini-avatar-badge";
+      badge.innerText = "👑";
+      avatarDiv.appendChild(badge);
+    }
+    
     const nameSpan = document.createElement('span');
-    nameSpan.innerText = (p.id === data.hostId ? "👑 " : "👤 ") + p.name;
-    li.prepend(nameSpan);
+    nameSpan.innerText = p.name;
+    nameSpan.style.marginLeft = "8px";
+    if (p.id === data.hostId) {
+      nameSpan.style.color = "var(--accent-gold, #fbbf24)";
+      nameSpan.style.fontWeight = "bold";
+    }
+    
+    const wrapper = document.createElement('div');
+    wrapper.style = "display: flex; align-items: center;";
+    wrapper.appendChild(avatarDiv);
+    wrapper.appendChild(nameSpan);
+    
+    li.prepend(wrapper);
     if (controls) li.appendChild(controls);
     
     dom.playerList.appendChild(li);
   });
+}
+function injectGlobalProfile() {
+  // 1. Inject Header Profile Button if missing
+  // We look for .nav-right (game headers) or .header-right (hub header)
+  let target = document.querySelector('.nav-right') || document.querySelector('.header-right');
+  
+  if (target && !document.getElementById('profile-btn')) {
+    const profileBtnHTML = `
+      <div id="profile-btn" class="header-user">
+        <div id="header-avatar" class="user-avatar">👤</div>
+        <span id="display-username" class="username">Guest</span>
+      </div>
+    `;
+    target.innerHTML = profileBtnHTML + target.innerHTML;
+  }
+
+  // 2. Inject Profile Modal if missing
+  if (!document.getElementById('profile-modal')) {
+    const modalHTML = `
+      <div id="profile-modal" class="modal hidden">
+        <div class="modal-content">
+          <h2>Edit User Profile</h2>
+          <button class="btn-close" id="btn-close-profile">&times;</button>
+          
+          <div class="modal-actions mt-2" style="align-items: stretch;">
+            <div class="profile-header-row">
+               <div class="avatar-preview-wrapper" id="btn-edit-avatar">
+                  <div id="modal-avatar-preview" class="user-avatar-large">👤</div>
+                  <div class="avatar-edit-overlay">
+                     <span style="font-size: 1.5rem;">✏️</span>
+                  </div>
+               </div>
+               
+               <div class="profile-info-column" style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; justify-content: center;">
+                  <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Username</label>
+                  <input type="text" id="input-username" placeholder="Enter your username" maxlength="15" class="w-100" style="padding: 0.8rem; font-size: 1.1rem;">
+               </div>
+            </div>
+
+            <div id="avatar-customizer" class="customizer-panel hidden">
+              <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Select Icon</label>
+              <div id="icon-selector" class="icon-grid"></div>
+
+              <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Background Color</label>
+              <div id="color-selector" class="color-grid"></div>
+            </div>
+
+            <button id="btn-save-profile" class="btn btn-mint mt-2 w-100" style="padding: 1rem; font-weight: bold; font-size: 1rem;">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+  }
 }
