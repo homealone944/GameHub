@@ -18,28 +18,20 @@ const btnRulesOk = document.getElementById('btn-rules-ok');
  */
 const framework = new GameFramework({
   gameId: 'tictactoe',
-  confettiContinuous: false,
-  slots: [
-    { name: 'X', color: '#ef4444', team: 'Team X' },
-    { name: 'O', color: '#10b981', team: 'Team O' }
-  ],
+  seating: {
+    archetype: 'teams',
+    minPlayers: 2,
+    maxPlayers: 2,
+    teams: [
+      { id: 'x', name: 'Team X', min: 1, max: 1, color: 'Coral' },
+      { id: 'o', name: 'Team O', min: 1, max: 1, color: 'Blue' }
+    ]
+  },
   engine: TicTacToeEngine,
   ui: {
     render: (state, fw) => {
-      // Import framework colors for dynamic tinting
-      const { FRAMEWORK_COLORS } = Array.from(document.scripts).find(s => s.src.includes('game-framework')) ? { FRAMEWORK_COLORS: fw.constructor.FRAMEWORK_COLORS } : { FRAMEWORK_COLORS: [] };
-      const getTeamHex = (slotIdx) => {
-         const slotConfig = fw.slots[slotIdx];
-         const teamKey = slotConfig.team || '_default';
-         const teamState = (state.teams && state.teams[teamKey]) || { color: 'Neutral' };
-         // Fallback to config color if dynamic team state isn't ready
-         const colorName = teamState.color;
-         const meta = (window.framework.constructor.FRAMEWORK_COLORS || []).find(c => c.name === colorName);
-         return meta ? meta.value : slotConfig.color;
-      };
-
-      const xColor = getTeamHex(0);
-      const oColor = getTeamHex(1);
+      const xColor = fw.getSlotColor(0);
+      const oColor = fw.getSlotColor(1);
 
       // Render Board Logic
       for (let i = 0; i < 9; i++) {

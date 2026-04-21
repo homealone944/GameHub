@@ -39,5 +39,6 @@ export const TicTacToeEngine = {
     }
 
     return null;
-  }
+  },
+  hasSettings: false
 };

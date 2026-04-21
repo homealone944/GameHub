@@ -196,25 +196,31 @@ body:has(.game-viewport) {
 .sheet-btn {
   background: var(--bg-secondary);
   border: 1px solid rgba(255,255,255,0.1);
-  padding: 1rem;
+  padding: 1rem 0.5rem;
   border-radius: 16px;
   color: white;
   display: flex;
-  flex: 1 1 150px;
-  min-width: 150px;
-  max-width: 250px; /* Prevent buttons from becoming awkwardly wide on large screens */
+  flex: 1 1 0; /* Ensures equal width in 4-column layout */
+  min-width: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 0.8rem;
 }
 
-.sheet-btn:hover {
+.sheet-btn:hover:not(:disabled) {
   background: rgba(255,255,255,0.05);
   border-color: var(--accent-mint);
   transform: translateY(-2px);
+}
+
+.sheet-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  filter: grayscale(1);
 }
 
 .sheet-btn span:first-child {
@@ -1405,6 +1411,13 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
   pointer-events: none;
 }
 
+.fw-player-pill.is-selected {
+  border-color: var(--accent-gold, #fbbf24);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.1);
+  transform: scale(1.05);
+}
+
 .fw-player-pill-ghost {
   position: fixed;
   pointer-events: none;
@@ -1449,6 +1462,38 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
 .fw-drop-zone.drop-hover {
   background: rgba(255,255,255,0.03);
   border-color: var(--accent-mint);
+}
+
+.fw-pill-input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9em;
+  font-family: inherit;
+  width: 100px;
+  outline: none;
+  text-align: left;
+  margin: 0;
+  padding: 0;
+}
+
+.fw-pill-input::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+.fw-pill-rename {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+  padding: 2px 5px;
+}
+
+.fw-pill-rename:hover {
+  opacity: 1;
+  transform: scale(1.2);
 }
 
 /* Team Editor */
