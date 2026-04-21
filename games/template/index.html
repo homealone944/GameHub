@@ -117,32 +117,6 @@
 
   <script src="../../js/notify.js"></script>
   <script src="../../js/lobby-shell.js" type="module"></script>
-  <script>
-    // Local UI Logic
-    const sheet = document.getElementById('control-sheet');
-    const footerTrigger = document.getElementById('footer-trigger');
-    const overlay = document.getElementById('sheet-overlay');
-    const sheetHeader = document.getElementById('sheet-header-close');
-    const modal = document.getElementById('modal-overlay');
-
-    function toggleSheet() {
-      const isActive = sheet.classList.toggle('active');
-      overlay.classList.toggle('hidden', !isActive);
-    }
-
-    footerTrigger.addEventListener('click', toggleSheet);
-    overlay.addEventListener('click', toggleSheet);
-    sheetHeader.addEventListener('click', toggleSheet);
-
-    function openModal(type) {
-      document.getElementById('modal-title').innerText = type.toUpperCase();
-      modal.classList.remove('hidden');
-      toggleSheet(); // Close sheet when opening modal
-    }
-
-    function closeModal() {
-      modal.classList.add('hidden');
-    }
-  </script>
+  <script src="game.js" type="module"></script>
 </body>
 </html>

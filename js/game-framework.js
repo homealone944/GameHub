@@ -22,7 +22,7 @@ export const FRAMEWORK_COLORS = [
 export class GameFramework {
   constructor(config) {
     this.gameId = config.gameId;
-    this.slots = config.slots; // e.g. [{ name: 'X', team: 'Blue' }]
+    this.seating = config.seating || { archetype: 'ffa', minPlayers: 2, maxPlayers: 4 };
     this.engine = config.engine;
     this.ui = config.ui;
     this.passThePhone = config.passThePhone || false;
@@ -87,16 +87,17 @@ export class GameFramework {
     const modalHTML = `
       <div id="fw-players-modal" class="modal hidden" style="z-index: 10000;">
         <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
-          <h2 class="text-gradient">Players & Teams</h2>
+          <h2 class="text-gradient" style="margin-bottom: 4px;">Players & Teams</h2>
+          <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 20px;">Drag players around to fill teams</p>
           <button class="btn-close" id="fw-players-close">&times;</button>
           
-          <div id="fw-teams-container" style="margin-top: 1.5rem; text-align: left;">
-            <!-- Sorted Slots & Team Headers here -->
+          <div id="fw-seating-toolbar" class="host-only" style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; gap: 0.5rem; align-items: center;">
+             <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 800; text-transform: uppercase; margin-right: auto;">Host Toolkit</span>
+             <button class="btn btn-sm btn-mint" style="padding: 4px 12px; font-size: 0.75rem;" onclick="window.framework.randomAutoFill()">✨ Random Auto-fill</button>
           </div>
-
-          <div id="fw-spectators-container" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; text-align: left;">
-             <label style="color: var(--text-secondary); font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Spectators</label>
-             <div id="fw-spectators-list" style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+          
+          <div id="fw-teams-container" style="margin-top: 1rem; text-align: left;">
+            <!-- Sorted Slots & Team Headers here -->
           </div>
           
           <button id="fw-players-ok" class="btn btn-mint mt-2 w-100">Done</button>
@@ -106,7 +107,14 @@ export class GameFramework {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     this.dom.playersModal = document.getElementById('fw-players-modal');
     document.getElementById('fw-players-close').addEventListener('click', () => this.closePlayersModal());
-    document.getElementById('fw-players-ok').addEventListener('click', () => this.closePlayersModal());
+    document.getElementById('fw-players-ok').addEventListener('click', () => {
+       const validation = this.validateSeating();
+       if (!validation.ok) {
+          if (window.Notify) window.Notify.toast(validation.error);
+          return;
+       }
+       this.closePlayersModal();
+    });
 
     // 3. Game Over Overlay
     const gameOverHTML = `
@@ -127,7 +135,6 @@ export class GameFramework {
     `;
     document.body.insertAdjacentHTML('beforeend', gameOverHTML);
     this.dom.gameOverOverlay = document.getElementById('fw-gameover-overlay');
-    this.dom.spectatorContainer = document.getElementById('fw-spectators-container');
     
     // Use delegated or specific listener for the "X"
     this.dom.gameOverOverlay.addEventListener('click', (e) => {
@@ -199,108 +206,178 @@ export class GameFramework {
     if (!this.gameState) return;
 
     const isHost = this.isHost();
+    const toolbar = document.getElementById('fw-seating-toolbar');
+    if (toolbar) toolbar.classList.toggle('host-only', !isHost);
+
     const lobbyPlayers = (window.currentLobbyData && window.currentLobbyData.players) || [];
+    const arch = this.seating.archetype;
+    const currentSlots = this.gameState.slots;
 
-    // Hide spectators in local mode
-    if (this.dom.spectatorContainer) {
-       this.dom.spectatorContainer.classList.toggle('hidden', !this.isOnline);
-    }
-
+    const container = document.createElement('div');
+    container.className = 'fw-st-container';
+    
+    // 1. Team Grid
+    const teamGrid = document.createElement('div');
+    teamGrid.className = 'fw-team-grid';
+    
     const teamMap = {};
-    this.slots.forEach((slot, i) => {
+    currentSlots.forEach((slot, i) => {
       const teamKey = slot.team || '_default';
       if (!teamMap[teamKey]) teamMap[teamKey] = [];
-      teamMap[teamKey].push({ config: slot, index: i });
+      teamMap[teamKey].push({ data: slot, index: i });
     });
 
-    Object.keys(teamMap).forEach(teamKey => {
-       const teamState = (this.gameState.teams && this.gameState.teams[teamKey]) || { name: teamKey === '_default' ? 'Players' : teamKey, color: 'Neutral' };
-       const colorMeta = FRAMEWORK_COLORS.find(c => c.name === teamState.color) || FRAMEWORK_COLORS[0];
+    const teamKeys = Object.keys(teamMap);
+    teamKeys.forEach(teamKey => {
+      if (teamKey === '_spec') return; // Handled separately
+      
+      const teamState = (this.gameState.teams && this.gameState.teams[teamKey]) || { name: (teamKey === '_default' ? 'Players' : teamKey), color: 'Neutral' };
+      const colorMeta = FRAMEWORK_COLORS.find(c => c.name === teamState.color) || FRAMEWORK_COLORS[0];
+      
+      let teamConfig = null;
+      if (arch === 'teams' && this.seating.teams) {
+         teamConfig = this.seating.teams.find(t => t.id === teamKey);
+      }
 
-       const header = document.createElement('div');
-       header.className = 'fw-team-header';
-       header.style = `display: flex; justify-content: space-between; align-items: center; border-left: 4px solid ${colorMeta.value}; padding-left: 10px; margin-bottom: 1rem;`;
-       
-       if (this.editingTeamKey === teamKey && isHost) {
-          header.innerHTML = `
-            <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-               <input type="text" id="fw-edit-team-name" value="${teamState.name}" style="background: var(--bg-card); color: white; border: 1px solid var(--accent-mint); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem;">
-               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                  ${FRAMEWORK_COLORS.map(c => `<div class="fw-color-bubble" data-color="${c.name}" style="background: ${c.value}; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid ${teamState.color === c.name ? 'white' : 'transparent'};"></div>`).join('')}
+      const slotsInTeam = teamMap[teamKey] || [];
+      const headerControls = [];
+      if (isHost) {
+         if (arch === 'teams' && teamKey !== '_default') {
+            headerControls.push(`<button class="btn btn-sm" style="background:none; border:none; padding:0; margin-left:8px;" onclick="window.framework.editingTeamKey = '${teamKey}'; window.framework.renderSeatingUI();">⚙️</button>`);
+         }
+      }
+
+      const card = document.createElement('div');
+      card.className = `fw-team-card ${!teamConfig || teamConfig.max > 10 ? 'fw-drop-zone' : ''}`;
+      card.dataset.team = teamKey;
+      card.style.borderLeft = `4px solid ${colorMeta.value}`;
+
+      if (this.editingTeamKey === teamKey) {
+         // --- EDIT MODE ---
+         const usedColors = Object.entries(this.gameState.teams)
+            .filter(([k, v]) => k !== teamKey)
+            .map(([k, v]) => v.color);
+
+         const colorsHTML = FRAMEWORK_COLORS.map(c => {
+            const isTaken = usedColors.includes(c.name);
+            return `
+               <div class="fw-color-bubble ${c.name === teamState.color ? 'active' : ''} ${isTaken ? 'is-taken' : ''}" 
+                    style="background: ${c.value}; ${isTaken ? 'opacity: 0.2; pointer-events: none; grayscale(1);' : ''}" 
+                    title="${isTaken ? 'Already taken' : c.name}"
+                    ${!isTaken ? `onclick="window.framework.updateTeamUI('${teamKey}', document.getElementById('edit-name-${teamKey}').value, '${c.name}')"` : ''}>
                </div>
-            </div>
-            <button id="fw-save-team" class="btn btn-sm btn-mint" style="margin-left: 10px;">Save</button>
-          `;
-          header.querySelectorAll('.fw-color-bubble').forEach(b => {
-             b.onclick = (e) => {
-                this.updateTeamUI(teamKey, document.getElementById('fw-edit-team-name').value, e.target.dataset.color);
-             };
-          });
-          header.querySelector('#fw-save-team').onclick = () => {
-             const newName = document.getElementById('fw-edit-team-name').value;
-             this.commitTeamChange(teamKey, newName, teamState.color);
-             this.editingTeamKey = null;
-             this.renderSeatingUI();
-          };
-       } else {
-          header.innerHTML = `
-            <span style="font-weight: 800; font-size: 0.8rem; text-transform: uppercase;">${teamState.name}</span>
-            ${isHost && teamKey !== '_default' ? `<button class="btn btn-sm" style="background: none; border: none; padding: 0;" onclick="window.framework.editingTeamKey = '${teamKey}'; window.framework.renderSeatingUI();">⚙️</button>` : ''}
-          `;
-       }
-       list.appendChild(header);
+            `;
+         }).join('');
 
-       teamMap[teamKey].forEach(item => {
-          const slotIndex = item.index;
-          const currentSlotData = this.gameState.slots[slotIndex];
-          const slotDiv = document.createElement('div');
-          slotDiv.className = 'seat-slot';
-          slotDiv.style.marginBottom = '1.25rem';
-          
-          let html = ``; // Removed redundant label
-          
-          if (this.isOnline) {
-            if (isHost) {
-              html += `<select class="seat-select w-100 mt-05">`;
-              html += `<option value="" ${!currentSlotData.id ? 'selected' : ''} disabled>Select Player...</option>`;
-              lobbyPlayers.forEach(p => {
-                html += `<option value="${p.id}" ${p.id === currentSlotData.id ? 'selected' : ''}>${p.name}${p.id === window.CLIENT_ID ? ' (You)' : ''}</option>`;
-              });
-              html += `</select>`;
-              slotDiv.innerHTML = html;
-              slotDiv.querySelector('select').addEventListener('change', (e) => this.assignSeat(slotIndex, e.target.value));
+         card.innerHTML = `
+           <div class="fw-team-edit-form">
+              <label style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 800;">Rename Team</label>
+              <input type="text" id="edit-name-${teamKey}" class="fw-edit-input" value="${teamState.name}" maxlength="15">
+              
+              <label style="font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 800;">Signature Color</label>
+              <div class="fw-color-grid">${colorsHTML}</div>
+              
+              <div class="fw-edit-actions">
+                 <button class="btn btn-sm btn-mint w-100" onclick="window.framework.saveTeamSettings('${teamKey}')">Save</button>
+                 <button class="btn btn-sm btn-secondary" onclick="window.framework.cancelTeamEdit()">Cancel</button>
+              </div>
+           </div>
+         `;
+      } else {
+         // --- VIEW MODE ---
+         const header = `
+           <div class="fw-team-header">
+              <span class="fw-team-name">${teamState.name}</span>
+              <div style="display:flex; align-items:center;">${headerControls.join('')}</div>
+           </div>
+         `;
+         card.innerHTML = header;
+
+         const pillList = document.createElement('div');
+         pillList.className = 'fw-pill-list';
+
+         // Fixed Slots Logic
+         const maxSlots = teamConfig ? teamConfig.max : (this.seating.maxPlayers || slotsInTeam.length);
+         const minForThisGroup = teamConfig ? (teamConfig.min || 0) : (teamKey === '_default' ? (this.seating.minPlayers || 0) : 0);
+
+         for (let i = 0; i < maxSlots; i++) {
+            const item = slotsInTeam[i];
+            const isMandatory = i < minForThisGroup;
+
+            if (item && item.data.id) {
+               // Filled Slot (Pill)
+               const pill = this.createPlayerPill(item.data, item.index);
+               pillList.appendChild(pill);
             } else {
-              const name = currentSlotData.name || 'Waiting...';
-              html += `<div style="padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 8px; color: white; font-weight: 600; margin-top: 4px;">${name}</div>`;
-              slotDiv.innerHTML = html;
+               // Empty Placeholder (Scrim)
+               const placeholder = document.createElement('div');
+               placeholder.className = 'fw-slot-placeholder';
+               if (isMandatory) placeholder.classList.add('is-mandatory');
+               
+               placeholder.dataset.team = teamKey;
+               // Map virtual index back to the real global slot index if possible
+               placeholder.dataset.index = item ? item.index : -1; 
+               
+               pillList.appendChild(placeholder);
             }
-          } else {
-            html += `<input type="text" class="w-100 mt-05" style="padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-card); color: white;" value="${currentSlotData.name || ''}" placeholder="Name">`;
-            slotDiv.innerHTML = html;
-            slotDiv.querySelector('input').addEventListener('input', (e) => this.renameLocalSlot(slotIndex, e.target.value));
-          }
-          list.appendChild(slotDiv);
-       });
+         }
+         card.appendChild(pillList);
+      }
+      
+      teamGrid.appendChild(card);
     });
+    
+    container.appendChild(teamGrid);
 
-    this.renderSpectators(lobbyPlayers);
+    // 2. Spectators (Elastic Zone)
+    const specSection = document.createElement('div');
+    specSection.style.marginTop = '1rem';
+    specSection.innerHTML = `<label style="color: var(--text-secondary); font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Spectators</label>`;
+    
+    const dropZone = document.createElement('div');
+    dropZone.className = 'fw-drop-zone';
+    dropZone.dataset.team = '_spec';
+
+    const assignedIds = currentSlots.map(s => s.id).filter(id => id !== null);
+    const spectators = lobbyPlayers.filter(p => !assignedIds.includes(p.id));
+
+    if (spectators.length === 0) {
+       dropZone.innerHTML = `<span style="font-size: 0.8rem; color: rgba(255,255,255,0.1); width: 100%; text-align: center; padding: 1rem;">Drag players here to spectate</span>`;
+    } else {
+       spectators.forEach(p => {
+          const pill = this.createPlayerPill({ id: p.id, name: p.name }, -1);
+          dropZone.appendChild(pill);
+       });
+    }
+
+    specSection.appendChild(dropZone);
+    container.appendChild(specSection);
+
+    list.appendChild(container);
+    
+    // Re-initialize drag behaviors
+    this.setupDragAndDrop();
   }
 
-  renderSpectators(allPlayers) {
-    const specList = document.getElementById('fw-spectators-list');
-    specList.innerHTML = '';
-    const assignedIds = this.gameState.slots.map(s => s.id).filter(id => id !== null);
-    const spectators = allPlayers.filter(p => !assignedIds.includes(p.id));
-    if (spectators.length === 0) {
-      specList.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">No spectators currently.</p>';
-      return;
-    }
-    spectators.forEach(p => {
-       const div = document.createElement('div');
-       div.style = "padding: 0.6rem 0.8rem; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 0.9rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;";
-       div.innerHTML = `<span>👤</span> <span>${p.name}${p.id === window.CLIENT_ID ? ' (You)' : ''}</span>`;
-       specList.appendChild(div);
-    });
+  createPlayerPill(data, slotIndex) {
+     const pill = document.createElement('div');
+     pill.className = 'fw-player-pill';
+     if (data.id === window.CLIENT_ID) pill.classList.add('is-me');
+     if (this.selectedPillId === data.id) pill.classList.add('is-selected');
+     pill.dataset.id = data.id;
+     pill.dataset.slotIndex = slotIndex;
+     pill.innerText = data.name + (data.id === window.CLIENT_ID ? ' (You)' : '');
+     return pill;
+  }
+
+  setupDragAndDrop() {
+    // We'll implement the full pointer-engine in the next step
+    // For now, let's just tag them and add a basic click-assign as requested
+    const pills = document.querySelectorAll('.fw-player-pill');
+    const targets = document.querySelectorAll('.fw-slot-placeholder, .fw-drop-zone');
+    
+    // Pointer Dragging logic will go here
+    this.initPointerDragEngine(pills, targets);
   }
 
   updateTeamUI(key, tempName, tempColorName) {
@@ -320,8 +397,9 @@ export class GameFramework {
   renameLocalSlot(index, newName) {
     if (!newName.trim()) return;
     this.gameState.slots[index].name = newName;
-    this.renderFrameworkUI();
     this.ui.render(this.gameState, this);
+    this.renderFrameworkUI();
+    this.renderSeatingUI();
   }
 
   initNetworkSync() {
@@ -348,18 +426,61 @@ export class GameFramework {
 
   initServerState(lobbyData) {
     const state = this.engine.getInitialState();
+    state.status = 'waiting';
     state.teams = {};
-    const uniqueTeams = [...new Set(this.slots.map(s => s.team).filter(Boolean))];
-    uniqueTeams.forEach(t => {
-       state.teams[t] = { name: t, color: 'Neutral' };
-    });
-    state.slots = this.slots.map((s, i) => {
-       const p = lobbyData.players[i] || { id: null, name: 'Waiting...' };
-       return { id: p.id, name: p.name };
-    });
-    state.status = 'playing';
+    state.slots = [];
+
+    // 2. Auto-Assign available players (Randomized)
+    this.autoAssignPlayers(state, lobbyData.players);
+
     state.activeSlotIndex = 0;
     this.commit(state);
+  }
+
+  autoAssignPlayers(state, lobbyPlayers) {
+    if (!state || !state.slots) return;
+    
+    // Clear existing assignments first to start fresh
+    state.slots.forEach(s => s.id = null);
+    
+    // Fisher-Yates Shuffle
+    const players = [...lobbyPlayers];
+    for (let i = players.length - 1; i > 0; i--) {
+       const j = Math.floor(Math.random() * (i + 1));
+       [players[i], players[j]] = [players[j], players[i]];
+    }
+
+    const available = [...players];
+    
+    // Pass 1: Fill mandatory slots
+    state.slots = state.slots.map(slot => {
+       if (available.length > 0) {
+          const p = available.shift();
+          return { ...slot, id: p.id, name: p.name };
+       }
+       return slot;
+    });
+
+    // Pass 2: Fill optional slots up to max
+    if (available.length > 0) {
+       if (this.seating.archetype === 'teams') {
+          this.seating.teams.forEach(t => {
+             while (available.length > 0) {
+                const currentInTeam = state.slots.filter(s => s.team === t.id).length;
+                if (currentInTeam >= (t.max || 99)) break;
+                const p = available.shift();
+                state.slots.push({ id: p.id, name: p.name, team: t.id });
+             }
+          });
+       } else {
+          const groupKey = this.seating.archetype === 'coop' ? '_coop' : '_default';
+          const max = this.seating.maxPlayers || 99;
+          while (available.length > 0 && state.slots.length < max) {
+             const p = available.shift();
+             state.slots.push({ id: p.id, name: p.name, team: groupKey });
+          }
+       }
+    }
   }
 
   updateMySlot(data) {
@@ -423,19 +544,53 @@ export class GameFramework {
 
   async commit(state) {
     this.gameState = state;
-    await updateGameState(this.lobbyId, state);
+    if (this.isOnline && this.lobbyId) {
+       await updateGameState(this.lobbyId, state);
+    } else {
+       // Local or Mock mode update
+       this.renderFrameworkUI();
+       if (this.ui && this.ui.render) this.ui.render(this.gameState, this);
+    }
   }
 
   resetLocalGame() {
     this.gameState = this.engine.getInitialState();
-    this.gameState.slots = this.slots.map(s => ({ id: null, name: s.name }));
-    this.gameState.status = 'playing';
+    this.gameState.status = 'waiting';
+    this.gameState.teams = {};
+    
+    // 1. Generate initial slots & teams based on seating config
+    const initialSlots = [];
+    if (this.seating.archetype === 'teams') {
+       this.seating.teams.forEach(t => {
+          this.gameState.teams[t.id] = { name: t.name, color: t.color || 'Neutral' };
+          for (let i = 0; i < t.min; i++) {
+             initialSlots.push({ id: null, name: 'Waiting...', team: t.id });
+          }
+       });
+    } else if (this.seating.archetype === 'coop') {
+       this.gameState.teams['_coop'] = { name: this.seating.teamName || 'Team', color: this.seating.color || 'Mint' };
+       for (let i = 0; i < this.seating.minPlayers; i++) {
+          initialSlots.push({ id: null, name: 'Waiting...', team: '_coop' });
+       }
+    } else {
+       for (let i = 0; i < this.seating.minPlayers; i++) {
+          initialSlots.push({ id: null, name: 'Waiting...', team: '_default' });
+       }
+    }
+    
+    this.gameState.slots = initialSlots;
+
+    // 2. Auto-Assign available players randomized
+    const lobbyPlayers = (window.currentLobbyData && window.currentLobbyData.players) || [];
+    this.autoAssignPlayers(this.gameState, lobbyPlayers);
+
     this.gameState.activeSlotIndex = 0;
+    
     if (this.dom.gameOverOverlay) this.dom.gameOverOverlay.classList.remove('visible');
     this.gameOverDismissed = false;
     this.stopConfetti();
     this.renderFrameworkUI();
-    this.ui.render(this.gameState, this);
+    if (this.ui && this.ui.render) this.ui.render(this.gameState, this);
   }
 
   resetOnlineGame() {
@@ -450,16 +605,247 @@ export class GameFramework {
     this.commit(newState);
   }
 
-  async assignSeat(slotIndex, playerId) {
-    const players = window.currentLobbyData.players;
-    const player = players.find(p => p.id === playerId);
+  initPointerDragEngine(pills, targets) {
+    if (!this.isHost()) return;
+
+    let dragPill = null;
+    let ghost = null;
+    let offset = { x: 0, y: 0 };
+    let currentTarget = null;
+
+    const onPointerDown = (e) => {
+       const pill = e.target.closest('.fw-player-pill');
+       if (!pill) return;
+       
+       dragPill = pill;
+       const rect = pill.getBoundingClientRect();
+       offset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+       
+       // Create Ghost
+       ghost = pill.cloneNode(true);
+       ghost.classList.add('fw-player-pill-ghost');
+       ghost.style.width = rect.width + 'px';
+       ghost.style.left = rect.left + 'px';
+       ghost.style.top = rect.top + 'px';
+       document.body.appendChild(ghost);
+       
+       pill.classList.add('dragging');
+       
+       window.addEventListener('pointermove', onPointerMove);
+       window.addEventListener('pointerup', onPointerUp);
+       
+       e.preventDefault();
+    };
+
+    const onPointerMove = (e) => {
+       if (!ghost) return;
+       
+       ghost.style.left = (e.clientX - offset.x) + 'px';
+       ghost.style.top = (e.clientY - offset.y) + 'px';
+       
+       // Hit Detection
+       ghost.style.pointerEvents = 'none';
+       const elements = document.elementsFromPoint(e.clientX, e.clientY);
+       ghost.style.pointerEvents = 'auto';
+       
+       const target = elements.find(el => el.classList.contains('fw-slot-placeholder') || el.classList.contains('fw-drop-zone'));
+       
+       if (target !== currentTarget) {
+          if (currentTarget) currentTarget.classList.remove('drop-hover');
+          currentTarget = target;
+          if (currentTarget) currentTarget.classList.add('drop-hover');
+       }
+    };
+
+    const onPointerUp = (e) => {
+       window.removeEventListener('pointermove', onPointerMove);
+       window.removeEventListener('pointerup', onPointerUp);
+       
+       // Handle Drop
+       if (currentTarget && dragPill) {
+          const playerId = dragPill.dataset.id;
+          const targetTeam = currentTarget.dataset.team;
+          const targetIndex = parseInt(currentTarget.dataset.index);
+          this.moveToSlot(playerId, targetTeam, targetIndex);
+       } 
+       // Handle Click Selection (Tap-to-Assign)
+       else if (!ghost && e.target.closest('.fw-player-pill')) {
+          const pill = e.target.closest('.fw-player-pill');
+          if (this.selectedPillId === pill.dataset.id) {
+             this.selectedPillId = null;
+          } else {
+             this.selectedPillId = pill.dataset.id;
+          }
+          this.renderSeatingUI();
+       }
+       else if (!ghost && this.selectedPillId && (e.target.closest('.fw-slot-placeholder') || e.target.closest('.fw-drop-zone'))) {
+          const target = e.target.closest('.fw-slot-placeholder') || e.target.closest('.fw-drop-zone');
+          this.moveToSlot(this.selectedPillId, target.dataset.team, parseInt(target.dataset.index));
+          this.selectedPillId = null;
+       }
+       
+       if (ghost) {
+          ghost.remove();
+          ghost = null;
+       }
+       if (dragPill) {
+          dragPill.classList.remove('dragging');
+          dragPill = null;
+       }
+       if (currentTarget) {
+          currentTarget.classList.remove('drop-hover');
+          currentTarget = null;
+       }
+    };
+
+    pills.forEach(p => p.addEventListener('pointerdown', onPointerDown));
+  }
+
+  async moveToSlot(playerId, teamKey, slotIndex) {
+    if (!this.isHost()) return;
+    const lobbyPlayers = (window.currentLobbyData && window.currentLobbyData.players) || [];
+    const player = lobbyPlayers.find(p => p.id === playerId);
     if (!player) return;
+
     const newState = { ...this.gameState };
-    newState.slots[slotIndex] = { id: playerId, name: player.name };
-    const fresh = this.engine.getInitialState();
-    Object.assign(newState, fresh);
-    newState.status = 'playing';
-    newState.activeSlotIndex = 0;
+    
+    // 1. Clear player from any existing slot
+    newState.slots = newState.slots.map(s => {
+       if (s.id === playerId) {
+          return { ...s, id: null, name: 'Waiting...' };
+       }
+       return s;
+    });
+
+    // 2. Assign to new slot if not spectator
+    if (teamKey !== '_spec') {
+       if (isNaN(slotIndex) || slotIndex === -1) {
+          // Elastic zone drop OR Virtual Placeholder
+          const firstEmpty = newState.slots.findIndex(s => s.team === teamKey && s.id === null);
+          if (firstEmpty !== -1) {
+             newState.slots[firstEmpty] = { id: playerId, name: player.name, team: teamKey };
+          } else {
+             newState.slots.push({ id: playerId, name: player.name, team: teamKey });
+          }
+       } else {
+          // Fixed slot drop
+          newState.slots[slotIndex] = { id: playerId, name: player.name, team: teamKey };
+       }
+    }
+
+    // 3. Compact Slots (Move Up behavior)
+    newState.slots = this.compactSlots(newState.slots);
+    
+    await this.commit(newState);
+    this.renderSeatingUI();
+  }
+
+  updateTeamUI(teamKey, newName, newColor) {
+    if (!this.gameState.teams) this.gameState.teams = {};
+    this.gameState.teams[teamKey] = { name: newName, color: newColor };
+    this.renderSeatingUI();
+  }
+
+  async saveTeamSettings(teamKey) {
+    const input = document.getElementById(`edit-name-${teamKey}`);
+    const newName = input.value.trim() || this.gameState.teams[teamKey].name;
+    const color = this.gameState.teams[teamKey].color; // Already updated via updateTeamUI
+    
+    this.gameState.teams[teamKey].name = newName;
+    this.editingTeamKey = null;
+    await this.commit(this.gameState);
+    this.renderSeatingUI();
+  }
+
+  cancelTeamEdit() {
+    this.editingTeamKey = null;
+    this.renderSeatingUI();
+  }
+
+  randomAutoFill() {
+    if (!this.isHost()) return;
+    const lobbyPlayers = (window.currentLobbyData && window.currentLobbyData.players) || [];
+    this.autoAssignPlayers(this.gameState, lobbyPlayers);
+    this.commit(this.gameState);
+    this.renderSeatingUI();
+  }
+
+  validateSeating() {
+    if (!this.gameState || !this.gameState.slots) return { ok: true };
+    const lobbyPlayers = (window.currentLobbyData && window.currentLobbyData.players) || [];
+    const assignedIds = this.gameState.slots.map(s => s.id).filter(id => id !== null);
+    const spectators = lobbyPlayers.filter(p => !assignedIds.includes(p.id));
+    
+    if (spectators.length === 0) return { ok: true };
+
+    const arch = this.seating.archetype;
+    let emptyMandatoryCount = 0;
+
+    if (arch === 'teams') {
+       this.seating.teams.forEach(t => {
+          const slotsInTeam = this.gameState.slots.filter(s => s.team === t.id);
+          for (let i = 0; i < (t.min || 1); i++) {
+             if (i < slotsInTeam.length && !slotsInTeam[i].id) {
+                emptyMandatoryCount++;
+             }
+          }
+       });
+    } else {
+       const min = this.seating.minPlayers || 2;
+       for (let i = 0; i < min; i++) {
+          if (i < this.gameState.slots.length && !this.gameState.slots[i].id) {
+             emptyMandatoryCount++;
+          }
+       }
+    }
+
+    if (emptyMandatoryCount > 0) {
+       return { 
+          ok: false, 
+          error: `Please fill mandatory slots! You have ${emptyMandatoryCount} empty required seat(s) and people waiting.` 
+       };
+    }
+
+    return { ok: true };
+  }
+
+  compactSlots(slots) {
+    const teams = Array.from(new Set(slots.map(s => s.team)));
+    let newSlots = [];
+    
+    teams.forEach(tKey => {
+       const teamInSlots = slots.filter(s => s.team === tKey);
+       const players = teamInSlots.filter(s => s.id !== null);
+       const emptyCount = teamInSlots.length - players.length;
+       
+       newSlots.push(...players);
+       for(let i=0; i<emptyCount; i++) {
+          newSlots.push({ id: null, name: 'Waiting...', team: tKey });
+       }
+    });
+
+    return newSlots;
+  }
+
+  async addSlot(teamKey = '_default') {
+    if (!this.isHost()) return;
+    const newState = { ...this.gameState };
+    newState.slots.push({ id: null, name: 'Waiting...', team: teamKey });
+    await this.commit(newState);
+    this.renderSeatingUI();
+  }
+
+  async removeSlot(slotIndex) {
+    if (!this.isHost()) return;
+    const newState = { ...this.gameState };
+    newState.slots.splice(slotIndex, 1);
+    await this.commit(newState);
+    this.renderSeatingUI();
+  }
+
+  async startGame() {
+    if (!this.isHost()) return;
+    const newState = { ...this.gameState, status: 'playing' };
     await this.commit(newState);
   }
 
@@ -488,8 +874,8 @@ export class GameFramework {
     if (this.dom.selfRoleBadge) {
        if (this.isOnline) {
           if (this.mySlotIndex !== null) {
-             const slotMeta = this.slots[this.mySlotIndex];
-             this.dom.selfRoleBadge.innerText = `PLAYING AS ${slotMeta.name}`;
+             const slotData = this.gameState.slots[this.mySlotIndex];
+             this.dom.selfRoleBadge.innerText = `PLAYING AS ${slotData.name}`;
              this.dom.selfRoleBadge.className = `role-badge playing-slot-${this.mySlotIndex}`;
           } else {
              this.dom.selfRoleBadge.innerText = "SPECTATING";
@@ -502,7 +888,46 @@ export class GameFramework {
     }
 
     if (this.dom.turnIndicator) {
-       if (this.gameState.status === 'finished') {
+       const status = this.gameState.status;
+
+       if (status === 'waiting') {
+          // --- LOBBY WAITING PHASE ---
+          this.dom.turnIndicator.innerText = "Lobby: Assigning Players";
+          
+          if (this.dom.rematchBtn) {
+             const isHost = this.isHost();
+             // Validation: Are minimum players met?
+             let canStart = true;
+             const filledSlots = this.gameState.slots.filter(s => s.id !== null).length;
+             
+             if (this.seating.archetype === 'teams') {
+                this.seating.teams.forEach(tc => {
+                   const teamCount = this.gameState.slots.filter(s => s.team === tc.id && s.id !== null).length;
+                   if (teamCount < tc.min) canStart = false;
+                });
+             } else {
+                if (filledSlots < (this.seating.minPlayers || 0)) canStart = false;
+             }
+
+             this.dom.rematchBtn.innerText = "Start Game";
+             this.dom.rematchBtn.disabled = !canStart || !isHost;
+             this.dom.rematchBtn.style.opacity = (canStart && isHost) ? "1" : "0.5";
+             this.dom.rematchBtn.classList.toggle('host-only', !isHost);
+             
+             // Update the click handler just for the 'waiting' state
+             this.dom.rematchBtn.onclick = () => {
+                if (canStart && isHost) this.startGame();
+             };
+          }
+       } else if (status === 'finished') {
+          // --- MATCH FINISHED ---
+          if (this.dom.rematchBtn) {
+             this.dom.rematchBtn.innerText = this.isOnline ? "Rematch" : "Reset";
+             this.dom.rematchBtn.disabled = false;
+             this.dom.rematchBtn.style.opacity = "1";
+             this.dom.rematchBtn.onclick = () => this.isOnline ? (this.isHost() && this.resetOnlineGame()) : this.resetLocalGame();
+          }
+
           if (this.gameState.winner === 'draw') {
              this.dom.turnIndicator.innerText = "It's a Draw!";
              this.showGameOver('draw');
@@ -510,12 +935,9 @@ export class GameFramework {
              this.dom.turnIndicator.innerText = "Mission Failed! ❌";
              this.showGameOver('defeat');
           } else {
-             // Support single index or array of indices
              const winners = Array.isArray(this.gameState.winner) ? this.gameState.winner : [this.gameState.winner];
-             
-             // Get color of first winner for the text
-             const slotMeta = this.slots[winners[0]];
-             const teamKey = slotMeta.team || '_default';
+             const slotData = this.gameState.slots[winners[0]];
+             const teamKey = slotData.team || '_default';
              const teamState = (this.gameState.teams && this.gameState.teams[teamKey]) || { color: 'Neutral' };
              const colorMeta = FRAMEWORK_COLORS.find(c => c.name === teamState.color) || FRAMEWORK_COLORS[0];
 
@@ -525,19 +947,19 @@ export class GameFramework {
                  const winnerNames = winners.map(idx => this.gameState.slots[idx].name).join(' & ');
                  this.dom.turnIndicator.innerHTML = `<span style="color: ${colorMeta.value}; font-weight: 800;">${winnerNames}</span> Wins!`;
              }
-             
              this.showGameOver(winners[0]); 
           }
        } else {
-          const activeName = this.gameState.slots[this.gameState.activeSlotIndex].name;
-          if (this.isOnline && activeName === 'Waiting...') {
-             this.dom.turnIndicator.innerText = "Assign Players to Start";
-          } else {
-             const isMyTurn = (this.mySlotIndex === this.gameState.activeSlotIndex);
-             this.dom.turnIndicator.innerText = isMyTurn ? "Your Turn" : `${activeName}'s Turn`;
+          // --- PLAYING ---
+          if (this.dom.rematchBtn) {
+             this.dom.rematchBtn.innerText = "Rematch"; // Hidden usually via host-only or during play
+             this.dom.rematchBtn.classList.add('host-only');
           }
+
+          const activeName = this.gameState.slots[this.gameState.activeSlotIndex].name;
+          const isMyTurn = (this.mySlotIndex === this.gameState.activeSlotIndex);
+          this.dom.turnIndicator.innerText = isMyTurn ? "Your Turn" : `${activeName}'s Turn`;
           
-          // Dismiss overlay and clear confetti if game has been reset
           if (this.dom.gameOverOverlay) {
              this.dom.gameOverOverlay.classList.remove('visible');
              this.gameOverDismissed = false;
@@ -563,11 +985,11 @@ export class GameFramework {
        glow.style.background = `radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, transparent 70%)`;
     } else {
        const winnerName = this.gameState.slots[winnerIndex].name;
-       const slotMeta = this.slots[winnerIndex];
+       const slotData = this.gameState.slots[winnerIndex];
        
        // Determine personalization
        const isMyWin = (this.mySlotIndex === winnerIndex) || 
-                       (this.mySlotIndex !== null && this.slots[this.mySlotIndex].team && this.slots[this.mySlotIndex].team === slotMeta.team);
+                       (this.mySlotIndex !== null && this.gameState.slots[this.mySlotIndex].team && this.gameState.slots[this.mySlotIndex].team === slotData.team);
 
        if (this.mySlotIndex === null) {
           title.innerText = "GAME OVER";
