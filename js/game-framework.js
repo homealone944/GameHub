@@ -26,6 +26,7 @@ export class GameFramework {
     this.engine = config.engine;
     this.ui = config.ui;
     this.passThePhone = config.passThePhone || false;
+    this.confettiContinuous = config.confettiContinuous !== undefined ? config.confettiContinuous : true;
 
     // Internal State
     this.isOnline = false;
@@ -33,12 +34,15 @@ export class GameFramework {
     this.gameState = null;
     this.mySlotIndex = null;
     this.editingTeamKey = null; // UI state for the Host
+    this.gameOverDismissed = false;
+    this.confettiInterval = null;
     
     // UI References
     this.dom = {
       turnIndicator: document.getElementById('turn-indicator'),
       selfRoleBadge: document.getElementById('self-role-badge'),
       rematchBtn: document.getElementById('btn-rematch'),
+      settingsBtn: document.getElementById('btn-settings'),
       passDeviceOverlay: null,
       playersModal: null,
       gameOverOverlay: null
@@ -109,12 +113,13 @@ export class GameFramework {
       <div id="fw-gameover-overlay">
         <div class="fw-victory-glow" id="fw-glow"></div>
         <div class="fw-gameover-content">
+          <button class="btn-close" id="fw-gameover-close" style="top: 1.5rem; right: 1.5rem; z-index: 10;">&times;</button>
           <h1 id="fw-gameover-title" class="fw-gameover-title text-gradient">VICTORY</h1>
           <p id="fw-winner-name" class="fw-winner-name">Player 1 wins the match!</p>
           
           <div class="fw-gameover-actions">
-            <button id="fw-btn-rematch-hero" class="btn btn-mint w-100" style="padding: 1rem;">Rematch</button>
-            <button id="fw-btn-return-hub" class="btn btn-secondary w-100">Return to Hub</button>
+            <button id="fw-btn-rematch-hero" class="btn btn-mint w-100 host-only" style="padding: 1rem;">Rematch</button>
+            <button id="fw-btn-return-hub" class="btn btn-secondary w-100 host-only">Return to Hub</button>
           </div>
         </div>
         <div id="fw-confetti-container" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none;"></div>
@@ -123,6 +128,15 @@ export class GameFramework {
     document.body.insertAdjacentHTML('beforeend', gameOverHTML);
     this.dom.gameOverOverlay = document.getElementById('fw-gameover-overlay');
     this.dom.spectatorContainer = document.getElementById('fw-spectators-container');
+    
+    // Use delegated or specific listener for the "X"
+    this.dom.gameOverOverlay.addEventListener('click', (e) => {
+      if (e.target.id === 'fw-gameover-close' || e.target.id === 'fw-gameover-overlay') {
+        this.dom.gameOverOverlay.classList.remove('visible');
+        this.gameOverDismissed = true;
+        this.stopConfetti();
+      }
+    });
     
     document.getElementById('fw-btn-rematch-hero').addEventListener('click', () => {
       if (this.isOnline) {
@@ -324,9 +338,10 @@ export class GameFramework {
       this.ui.render(this.gameState, this);
       if (!this.dom.playersModal.classList.contains('hidden')) this.renderSeatingUI();
       
-      if (this.dom.rematchBtn) {
-         if (this.isHost()) this.dom.rematchBtn.classList.remove('hidden-host-only');
-         else this.dom.rematchBtn.classList.add('hidden-host-only');
+      if (this.isOnline) {
+         const isHost = this.isHost();
+         if (this.dom.rematchBtn) this.dom.rematchBtn.classList.toggle('host-only', !isHost);
+         if (this.dom.settingsBtn) this.dom.settingsBtn.classList.toggle('host-only', !isHost);
       }
     });
   }
@@ -417,8 +432,8 @@ export class GameFramework {
     this.gameState.status = 'playing';
     this.gameState.activeSlotIndex = 0;
     if (this.dom.gameOverOverlay) this.dom.gameOverOverlay.classList.remove('visible');
-    const confettiContainer = document.getElementById('fw-confetti-container');
-    if (confettiContainer) confettiContainer.innerHTML = '';
+    this.gameOverDismissed = false;
+    this.stopConfetti();
     this.renderFrameworkUI();
     this.ui.render(this.gameState, this);
   }
@@ -430,8 +445,8 @@ export class GameFramework {
     newState.status = 'playing';
     newState.activeSlotIndex = 0;
     if (this.dom.gameOverOverlay) this.dom.gameOverOverlay.classList.remove('visible');
-    const confettiContainer = document.getElementById('fw-confetti-container');
-    if (confettiContainer) confettiContainer.innerHTML = '';
+    this.gameOverDismissed = false;
+    this.stopConfetti();
     this.commit(newState);
   }
 
@@ -489,7 +504,7 @@ export class GameFramework {
     if (this.dom.turnIndicator) {
        if (this.gameState.status === 'finished') {
           if (this.gameState.winner === 'draw') {
-             this.dom.turnIndicator.innerText = "It's a Draw! 🤝";
+             this.dom.turnIndicator.innerText = "It's a Draw!";
              this.showGameOver('draw');
           } else if (this.gameState.winner === 'defeat') {
              this.dom.turnIndicator.innerText = "Mission Failed! ❌";
@@ -505,10 +520,10 @@ export class GameFramework {
              const colorMeta = FRAMEWORK_COLORS.find(c => c.name === teamState.color) || FRAMEWORK_COLORS[0];
 
              if (winners.length === 1 && winners[0] === this.mySlotIndex) {
-                 this.dom.turnIndicator.innerText = `You Win! 🎉`;
+                 this.dom.turnIndicator.innerText = `You Win!`;
              } else {
                  const winnerNames = winners.map(idx => this.gameState.slots[idx].name).join(' & ');
-                 this.dom.turnIndicator.innerHTML = `<span style="color: ${colorMeta.value}; font-weight: 800;">${winnerNames}</span> Wins! 🎉`;
+                 this.dom.turnIndicator.innerHTML = `<span style="color: ${colorMeta.value}; font-weight: 800;">${winnerNames}</span> Wins!`;
              }
              
              this.showGameOver(winners[0]); 
@@ -523,17 +538,17 @@ export class GameFramework {
           }
           
           // Dismiss overlay and clear confetti if game has been reset
-          if (this.dom.gameOverOverlay && this.dom.gameOverOverlay.classList.contains('visible')) {
+          if (this.dom.gameOverOverlay) {
              this.dom.gameOverOverlay.classList.remove('visible');
-             const confettiContainer = document.getElementById('fw-confetti-container');
-             if (confettiContainer) confettiContainer.innerHTML = '';
+             this.gameOverDismissed = false;
+             this.stopConfetti();
           }
        }
     }
   }
 
   showGameOver(winnerIndex) {
-    if (!this.dom.gameOverOverlay) return;
+    if (!this.dom.gameOverOverlay || this.gameOverDismissed) return;
     const title = document.getElementById('fw-gameover-title');
     const subtitle = document.getElementById('fw-winner-name');
     const glow = document.getElementById('fw-glow');
@@ -572,33 +587,67 @@ export class GameFramework {
 
        glow.style.background = `radial-gradient(circle, ${colorMeta.value}26 0%, transparent 70%)`;
        
-       if (isMyWin || this.mySlotIndex === null) {
+       const isAlreadyShowing = this.dom.gameOverOverlay.classList.contains('visible');
+       if (!isAlreadyShowing && (isMyWin || this.mySlotIndex === null)) {
          this.triggerConfetti(colorMeta.value);
        }
     }
     
+    const isHost = this.isHost();
+    const btnRematchHero = document.getElementById('fw-btn-rematch-hero');
+    const btnReturnHub = document.getElementById('fw-btn-return-hub');
+    if (this.isOnline) {
+      if (btnRematchHero) btnRematchHero.classList.toggle('host-only', !isHost);
+      if (btnReturnHub) btnReturnHub.classList.toggle('host-only', !isHost);
+    } else {
+      // Local mode: everyone is the "host"
+      if (btnRematchHero) btnRematchHero.classList.remove('host-only');
+      if (btnReturnHub) btnReturnHub.classList.remove('host-only');
+    }
+
     this.dom.gameOverOverlay.classList.add('visible');
   }
 
   triggerConfetti(color) {
     const container = document.getElementById('fw-confetti-container');
-    container.innerHTML = '';
-    const particleCount = 36; // Optimized count
+    if (!container) return;
     
-    for (let i = 0; i < particleCount; i++) {
+    this.stopConfetti();
+    container.innerHTML = '';
+
+    const spawn = () => {
        const confetti = document.createElement('div');
        confetti.className = 'fw-confetti';
        confetti.style.left = (Math.random() * 100) + 'vw';
        confetti.style.backgroundColor = color === 'rgba(255,255,255,0.2)' ? (['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24'][Math.floor(Math.random() * 4)]) : color;
        
-       // Set X drift via CSS variable
-       const xDrift = (Math.random() - 0.5) * 200; // -100px to +100px
+       const xDrift = (Math.random() - 0.5) * 200;
        confetti.style.setProperty('--fw-confetti-x', `${xDrift}px`);
        
-       confetti.style.animation = `fw-confetti-fall ${2 + Math.random() * 2}s linear forwards`;
-       confetti.style.animationDelay = (Math.random() * 1.5) + 's';
+       const duration = 2 + Math.random() * 2;
+       confetti.style.animation = `fw-confetti-fall ${duration}s linear forwards`;
        container.appendChild(confetti);
+       
+       // Clean up particle after it falls
+       setTimeout(() => confetti.remove(), duration * 1000);
+    };
+
+    // Initial burst
+    for(let i=0; i<50; i++) setTimeout(spawn, Math.random() * 500);
+    
+    // Continuous stream
+    if (this.confettiContinuous) {
+      this.confettiInterval = setInterval(spawn, 150);
     }
+  }
+
+  stopConfetti() {
+    if (this.confettiInterval) {
+      clearInterval(this.confettiInterval);
+      this.confettiInterval = null;
+    }
+    const container = document.getElementById('fw-confetti-container');
+    if (container) container.innerHTML = '';
   }
 }
 

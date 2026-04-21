@@ -533,6 +533,7 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
 }
 
 .hidden { display: none !important; }
+.host-only { display: none !important; }
 
 .text-gradient {
   background: linear-gradient(135deg, var(--accent-coral), var(--accent-mint));

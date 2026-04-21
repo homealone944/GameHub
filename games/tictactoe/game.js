@@ -18,6 +18,7 @@ const btnRulesOk = document.getElementById('btn-rules-ok');
  */
 const framework = new GameFramework({
   gameId: 'tictactoe',
+  confettiContinuous: false,
   slots: [
     { name: 'X', color: '#ef4444', team: 'Team X' },
     { name: 'O', color: '#10b981', team: 'Team O' }

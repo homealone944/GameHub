@@ -56,6 +56,7 @@
         <div class="status-item" style="display: flex; flex-direction: column; align-items: center;">
           <div class="status-label">GAME STATUS</div>
           <div id="turn-indicator" class="status-value text-gradient">WAITING...</div>
+          <div id="self-role-badge" class="role-badge spectating">SPECTATING</div>
         </div>
       </div>
 
@@ -81,21 +82,21 @@
       </div>
       
       <div class="sheet-content">
-        <button class="sheet-btn" onclick="openModal('rules')">
+        <button id="btn-rules" class="sheet-btn">
           <span>📖</span>
           <span>Rules</span>
         </button>
-        <button class="sheet-btn" onclick="openModal('settings')">
+        <button id="btn-players" class="sheet-btn">
+          <span>👥</span>
+          <span>Players</span>
+        </button>
+        <button id="btn-settings" class="sheet-btn">
           <span>⚙️</span>
           <span>Settings</span>
         </button>
-        <button class="sheet-btn">
-          <span>👤</span>
-          <span>Profile</span>
-        </button>
-        <button class="sheet-btn" style="color: var(--accent-coral);">
+        <button id="btn-rematch" class="sheet-btn" style="color: var(--accent-coral);">
           <span>🔄</span>
-          <span>Restart</span>
+          <span>Rematch</span>
         </button>
       </div>
     </div>
