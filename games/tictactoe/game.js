@@ -2,19 +2,10 @@
 import { GameFramework } from '../../js/game-framework.js';
 import { TicTacToeEngine } from './engine.js';
 
-// DOM Elements
-const cells = document.querySelectorAll('.cell');
-const sheet = document.getElementById('control-sheet');
-const footerTrigger = document.getElementById('footer-trigger');
-const overlay = document.getElementById('sheet-overlay');
-const sheetHeader = document.getElementById('sheet-header-close');
-const btnRules = document.getElementById('btn-rules');
-const rulesModal = document.getElementById('rules-modal');
-const btnCloseRules = document.getElementById('btn-close-rules');
-const btnRulesOk = document.getElementById('btn-rules-ok');
-
 /**
  * Tic-Tac-Toe Drive Configuration
+ * Note: Core UI components (Header, Status Bar, Bottom Sheet, Rules Modal)
+ * are now centrally injected by lobby-shell.js and managed by GameFramework.
  */
 const framework = new GameFramework({
   gameId: 'tictactoe',
@@ -23,13 +14,15 @@ const framework = new GameFramework({
     minPlayers: 2,
     maxPlayers: 2,
     teams: [
-      { id: 'x', name: 'Team X', min: 1, max: 1, color: 'Coral' },
-      { id: 'o', name: 'Team O', min: 1, max: 1, color: 'Blue' }
+      { id: 'x', name: 'Team X', min: 1, max: 1, color: 'Coral', symbol: 'X' },
+      { id: 'o', name: 'Team O', min: 1, max: 1, color: 'Blue', symbol: 'O' }
     ]
   },
   engine: TicTacToeEngine,
   ui: {
     render: (state, fw) => {
+      // DOM elements are within the #game-mount or provided by the shell
+      const cells = document.querySelectorAll('.cell');
       const xColor = fw.getSlotColor(0);
       const oColor = fw.getSlotColor(1);
 
@@ -48,50 +41,29 @@ const framework = new GameFramework({
         
         if (state.winningLine && state.winningLine.includes(i)) {
           cell.classList.add('win-cell');
-          // Add a glow in the winner's color
           cell.style.boxShadow = `0 0 20px ${val === 'X' ? xColor : oColor}44`;
         } else {
           cell.style.boxShadow = '';
         }
       }
     }
-  }
+  },
+  hasLobby: false
 });
 
 // Expose framework globally for inline event handlers
 window.framework = framework;
 
 /**
- * Event Binding
+ * Event Binding - Specific to the game board
  */
 function setupUI() {
-  // Cell Clicks
+  const cells = document.querySelectorAll('.cell');
   cells.forEach(cell => {
     cell.addEventListener('click', (e) => {
       framework.handleAction(parseInt(e.target.dataset.index));
     });
   });
-
-  // Sheet Toggle Logic
-  function toggleSheet() {
-    if (sheet.classList.contains('static')) return;
-    const isActive = sheet.classList.toggle('active');
-    overlay.classList.toggle('hidden', !isActive);
-  }
-
-  footerTrigger.addEventListener('click', toggleSheet);
-  overlay.addEventListener('click', toggleSheet);
-  sheetHeader.addEventListener('click', toggleSheet);
-
-  // Rules Modal
-  if (btnRules && rulesModal) {
-    btnRules.addEventListener('click', () => {
-      rulesModal.classList.remove('hidden');
-      toggleSheet();
-    });
-    btnCloseRules.addEventListener('click', () => rulesModal.classList.add('hidden'));
-    btnRulesOk.addEventListener('click', () => rulesModal.classList.add('hidden'));
-  }
 }
 
 // Start

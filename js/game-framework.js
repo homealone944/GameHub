@@ -1,5 +1,5 @@
-/* js/game-framework.js */
 import { subscribeToLobby, updateGameState } from './database-manager.js';
+import { GameShell } from './game-shell.js';
 
 
 
@@ -29,6 +29,7 @@ export class GameFramework {
     this.ui = config.ui;
     this.passThePhone = config.passThePhone || false;
     this.confettiContinuous = config.confettiContinuous !== undefined ? config.confettiContinuous : true;
+    this.hasLobby = config.hasLobby !== undefined ? config.hasLobby : true;
 
     this.validateSeatingConfig();
 
@@ -46,14 +47,14 @@ export class GameFramework {
     this.editingPlayerId = null; // Track who is being renamed inline
     this.lobbyPlayers = []; // Cache for online or local pools
     
-    // UI References
+    // UI References (Populated in init)
     this.dom = {
-      turnIndicator: document.getElementById('turn-indicator'),
-      selfRoleBadge: document.getElementById('self-role-badge'),
-      resetBtn: document.getElementById('btn-rematch'),
-      settingsBtn: document.getElementById('btn-settings'),
-      rulesBtn: document.getElementById('btn-rules'),
-      playersBtn: document.getElementById('btn-players'),
+      turnIndicator: null,
+      selfRoleBadge: null,
+      resetBtn: null,
+      settingsBtn: null,
+      rulesBtn: null,
+      playersBtn: null,
       passDeviceOverlay: null,
       playersModal: null,
       gameOverOverlay: null
@@ -98,23 +99,98 @@ export class GameFramework {
 
   getSlotColor(slotIndex) {
     if (!this.gameState || !this.gameState.slots[slotIndex]) return '#ffffff';
-    const teamKey = this.gameState.slots[slotIndex].team || '_default';
+    const slot = this.gameState.slots[slotIndex];
+    
+    // Prioritize stored color (Custom selection or Auto-assigned)
+    if (slot.color) {
+       const colors = GameFramework.COLORS;
+       const colorMeta = colors.find(c => c.name === slot.color) || colors[0];
+       return colorMeta.value;
+    }
+
+    const teamKey = slot.team || '_default';
+    
+    // If FFA/Default team without explicit color, assign distinct color based on slot index
+    if (teamKey === '_default') {
+       const colorIdx = (slotIndex % (GameFramework.COLORS.length - 1)) + 1; // Skip Neutral
+       return GameFramework.COLORS[colorIdx].value;
+    }
+    
     return this.getTeamColor(teamKey);
   }
 
   async init() {
+    // 1. Inject the standard Game Shell (UI Layout)
+    GameShell.injectBaseShell();
+
+    // 2. Setup Framework DOM and Components
+    this.bindFrameworkDOM();
     this.injectFrameworkComponents();
+    
+    // 3. Detect Mode
     const urlParams = new URLSearchParams(window.location.search);
     this.isOnline = urlParams.get('mode') === 'online';
     this.lobbyId = urlParams.get('lobby');
 
     this.setupFrameworkListeners();
 
+    // 4. Connect to Data Layer
     if (this.isOnline && this.lobbyId) {
       this.initNetworkSync();
     } else {
       this.resetLocalGame();
     }
+
+    // 5. Initial Pre-Game Lobby Check
+    this.checkPreGameStatus();
+  }
+
+  checkPreGameStatus() {
+     if (!this.gameState) return;
+     
+     // Only show the pre-game gate to the Host (Online) or any player (Local)
+     const shouldShowModal = !this.gameState.started && this.isHost();
+
+     if (shouldShowModal) {
+        GameShell.showPreGameModal(
+           this.isHost(), 
+           () => this.startGame(),
+           () => this.openPlayersModal(),
+           () => this.openRulesModal(),
+           (this.engine.getSettingsHTML || this.engine.settings) ? () => this.openSettingsModal() : null,
+           () => this.returnToHub()
+        );
+     } else {
+        GameShell.hidePreGameModal();
+     }
+  }
+
+  startGame() {
+     if (this.isOnline && !this.isHost()) return;
+
+     // Set both lobby state ('started') and game status ('playing')
+     const newState = { ...this.gameState, started: true, status: 'playing' };
+     
+     if (this.isOnline) {
+        this.commit(newState);
+     } else {
+        this.gameState = newState;
+        this.renderFrameworkUI();
+        if (this.ui && this.ui.render) this.ui.render(this.gameState, this);
+        GameShell.hidePreGameModal();
+     }
+  }
+
+  bindFrameworkDOM() {
+     this.dom.turnIndicator = document.getElementById('turn-indicator');
+     this.dom.selfRoleBadge = document.getElementById('self-role-badge');
+     this.dom.resetBtn = document.getElementById('btn-rematch');
+     this.dom.settingsBtn = document.getElementById('btn-settings');
+     this.dom.rulesBtn = document.getElementById('btn-rules');
+     this.dom.playersBtn = document.getElementById('btn-players');
+     
+     // Log errors if critical shell components are missing
+     if (!this.dom.resetBtn) console.error("GameFramework: #btn-rematch not found in DOM");
   }
 
   injectFrameworkComponents() {
@@ -144,10 +220,10 @@ export class GameFramework {
           <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 20px;">Drag or Tap players to fill teams</p>
           <button class="btn-close" id="fw-players-close">&times;</button>
           
-          <div id="fw-seating-toolbar" class="host-only" style="margin-bottom: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; gap: 0.5rem; align-items: center;">
-             <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 800; text-transform: uppercase; margin-right: auto;">Host Toolkit</span>
-             <button class="btn btn-sm btn-mint" style="padding: 4px 12px; font-size: 0.75rem;" onclick="window.framework.randomAutoFill()">✨ Random Auto-fill</button>
-          </div>
+          <div id="fw-seating-toolbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <button class="btn btn-sm btn-mint" style="padding: 4px 12px; font-size: 0.75rem;" onclick="window.framework.randomAutoFill()">✨ Random Auto-fill</button>
+              <div id="fw-toolbar-actions" style="display: flex; gap: 0.5rem; align-items: center;"></div>
+           </div>
           
           <div id="fw-teams-container" style="margin-top: 1rem; text-align: left;">
             <!-- Sorted Slots & Team Headers here -->
@@ -207,33 +283,37 @@ export class GameFramework {
       }
     });
 
-    document.getElementById('fw-btn-return-hub').addEventListener('click', () => {
-      if (this.isOnline) {
-        if (this.isHost()) {
-           // Synchronize navigation for everyone
-           const newState = { ...this.gameState, status: 'hub' };
-           this.commit(newState);
-        } else {
-            if (window.Notify) window.Notify.toast("Waiting for Host to return to Hub...");
-        }
+    document.getElementById('fw-btn-return-hub').addEventListener('click', () => this.returnToHub());
+  }
+
+  returnToHub() {
+    if (this.isOnline) {
+      if (this.isHost()) {
+         // Synchronize navigation for everyone
+         const newState = { ...this.gameState, status: 'hub' };
+         this.commit(newState);
       } else {
-         window.location.href = '../../index.html';
+          if (window.Notify) window.Notify.toast("Waiting for Host to return to Hub...");
       }
-    });
+    } else {
+       window.location.href = '../../index.html';
+    }
   }
 
   setupFrameworkListeners() {
+    // 1. Reset/Rematch Button
     if (this.dom.resetBtn) {
        this.dom.resetBtn.addEventListener('click', () => {
-         if (this.isOnline) {
-           if (this.isHost()) this.resetOnlineGame();
-           else if (window.Notify) window.Notify.toast("Waiting for Host to restart...");
-         } else {
-           this.resetLocalGame();
-         }
+          if (this.isOnline) {
+            if (this.isHost()) this.resetOnlineGame();
+            else if (window.Notify) window.Notify.toast("Waiting for Host to restart...");
+          } else {
+            this.resetLocalGame();
+          }
        });
     }
 
+    // 2. Players Modal
     if (this.dom.playersBtn) {
        this.dom.playersBtn.addEventListener('click', () => {
           if (this.seating.maxPlayers > 1) {
@@ -242,6 +322,68 @@ export class GameFramework {
              window.Notify.toast("No seating management for solo games.");
           }
        });
+    }
+
+    // 3. Rules Modal
+    if (this.dom.rulesBtn) {
+       this.dom.rulesBtn.addEventListener('click', () => {
+          this.openRulesModal();
+          this.toggleSheet(false); // Close sheet when opening rules
+       });
+    }
+
+    // 4. Sheet Toggles
+    const sheetOverlay = document.getElementById('sheet-overlay');
+    const sheetClose = document.getElementById('sheet-header-close');
+
+    if (sheetOverlay) sheetOverlay.addEventListener('click', () => this.toggleSheet(false));
+    if (sheetClose) sheetClose.addEventListener('click', () => this.toggleSheet());
+
+    // 5. Modal Close Listeners (Rules)
+    const btnCloseRules = document.getElementById('btn-close-rules');
+    const btnRulesOk = document.getElementById('btn-rules-ok');
+    if (btnCloseRules) btnCloseRules.addEventListener('click', () => this.closeRulesModal());
+    if (btnRulesOk) btnRulesOk.addEventListener('click', () => this.closeRulesModal());
+  }
+
+  toggleSheet(forceState) {
+    const sheet = document.getElementById('control-sheet');
+    const overlay = document.getElementById('sheet-overlay');
+    if (!sheet || !overlay) return;
+
+    const isVisible = (forceState !== undefined) ? forceState : !sheet.classList.contains('active');
+    
+    if (isVisible) {
+       sheet.classList.add('active');
+       overlay.classList.remove('hidden');
+    } else {
+       sheet.classList.remove('active');
+       overlay.classList.add('hidden');
+    }
+  }
+
+  openRulesModal() {
+    const modal = document.getElementById('rules-modal');
+    const contentBody = document.getElementById('rules-content-body');
+    if (!modal) return;
+
+    if (contentBody && this.engine && this.engine.getRulesHTML) {
+       contentBody.innerHTML = this.engine.getRulesHTML();
+    }
+    
+    modal.classList.remove('hidden');
+  }
+
+  closeRulesModal() {
+    const modal = document.getElementById('rules-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  openSettingsModal() {
+     if (window.Notify) {
+        window.Notify.toast("⚙️ Settings for this game are available in the bottom tray.");
+     } else {
+        alert("Settings for this game can be adjusted in the bottom sheet controls.");
      }
   }
 
@@ -265,7 +407,18 @@ export class GameFramework {
 
     const isHost = this.isHost();
     const toolbar = document.getElementById('fw-seating-toolbar');
-    if (toolbar) toolbar.classList.toggle('host-only', !isHost);
+    if (toolbar) {
+       toolbar.classList.toggle('host-only', !isHost || !this.isOnline);
+       
+       // Handle Team Swap Button for local or host
+       const canSwap = this.seating.archetype === 'teams' && this.seating.teams && this.seating.teams.length === 2;
+       const swapContainer = document.getElementById('fw-toolbar-actions');
+       if (swapContainer) {
+          swapContainer.innerHTML = canSwap ? `<button class="btn btn-secondary btn-sm" id="fw-btn-swap-teams" title="Swap Sides">⇅ Swap Teams</button>` : '';
+          const swapBtn = document.getElementById('fw-btn-swap-teams');
+          if (swapBtn) swapBtn.onclick = () => this.swapTeams();
+       }
+    }
 
     // Get the right player pool (Online Lobby or Local Guests)
     this.lobbyPlayers = this.isOnline 
@@ -484,17 +637,27 @@ export class GameFramework {
 
      // --- Inline Editor Mode ---
      if (this.editingPlayerId === data.id) {
+        const editorContainer = document.createElement('div');
+        editorContainer.className = 'fw-pill-editor';
+
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'fw-pill-input';
         input.value = data.name;
         input.maxLength = 15;
         
-        input.onblur = () => this.savePlayerRename(data.id, input.value);
+        let selectedColorName = data.color || null;
+
+        input.onblur = (e) => {
+           // Small delay to allow swatch clicks to register first
+           setTimeout(() => {
+              if (this.editingPlayerId === data.id) this.savePlayerEdits(data.id, input.value, selectedColorName);
+           }, 150);
+        };
         input.onkeydown = (e) => {
            if (e.key === 'Enter') {
               e.preventDefault();
-              this.savePlayerRename(data.id, input.value);
+              this.savePlayerEdits(data.id, input.value, selectedColorName);
            }
            if (e.key === 'Escape') {
               this.editingPlayerId = null;
@@ -502,33 +665,85 @@ export class GameFramework {
            }
         };
 
-        pill.appendChild(input);
+        editorContainer.appendChild(input);
+
+        // FFA Color Picker
+        if (this.seating.archetype === 'ffa') {
+           const colorPicker = document.createElement('div');
+           colorPicker.className = 'fw-color-picker';
+
+           // Identify taken colors by OTHER players
+           const takenColors = this.gameState.slots
+              .filter(s => s.id && s.id !== data.id)
+              .map(s => s.color);
+
+           GameFramework.COLORS.forEach(c => {
+              if (c.name === 'Neutral') return;
+              
+              const swatch = document.createElement('div');
+              swatch.className = 'fw-color-swatch';
+              swatch.style.background = c.value;
+              swatch.title = c.name;
+
+              const isTaken = takenColors.includes(c.name);
+              const isSelected = selectedColorName === c.name;
+
+              if (isTaken) swatch.classList.add('taken');
+              if (isSelected) swatch.classList.add('selected');
+
+              swatch.onclick = (e) => {
+                 e.stopPropagation();
+                 if (isTaken) return;
+                 selectedColorName = c.name;
+                 this.savePlayerEdits(data.id, input.value, selectedColorName);
+              };
+
+              colorPicker.appendChild(swatch);
+           });
+           editorContainer.appendChild(colorPicker);
+        }
+
+        pill.appendChild(editorContainer);
         setTimeout(() => input.focus(), 50);
         return pill;
      }
 
      // --- View Mode ---
      const isLocalGuest = !this.isOnline || (data.id && data.id.startsWith('guest-'));
+     const slotColor = this.getSlotColor(slotIndex);
+
+     const showIndicator = this.seating.archetype === 'ffa' || this.seating.archetype === 'coop';
+
      pill.innerHTML = `
-        <span>${data.name}${data.id === window.CLIENT_ID ? ' (You)' : ''}</span>
+        ${showIndicator ? `<div class="fw-player-color-indicator" style="background: ${slotColor}"></div>` : ''}
+        <span class="fw-pill-name">${data.name}${data.id === window.CLIENT_ID ? ' (You)' : ''}</span>
         ${isLocalGuest ? `<div class="fw-pill-rename" title="Rename Player">✏️</div>` : ''}
      `;
      return pill;
   }
 
-  savePlayerRename(playerId, newName) {
+  savePlayerEdits(playerId, newName, newColor) {
      if (!this.editingPlayerId) return;
      
      const player = this.lobbyPlayers.find(p => p.id === playerId);
-     if (player && newName && newName.trim()) {
-        const name = newName.trim().substring(0, 15);
+     if (player) {
+        // Update Name
+        if (newName && newName.trim()) {
+           player.name = newName.trim().substring(0, 15);
+        }
         
-        // 1. Update in the pool instance
-        player.name = name;
-        
+        // Update Color for FFA
+        if (newColor && this.seating.archetype === 'ffa') {
+           player.color = newColor;
+        }
+
         // 2. Update all slots matching this ID
         this.gameState.slots = this.gameState.slots.map(s => {
-           if (s.id === playerId) return { ...s, name: name };
+           if (s.id === playerId) {
+              const updated = { ...s, name: player.name };
+              if (newColor) updated.color = newColor;
+              return updated;
+           }
            return s;
         });
 
@@ -596,9 +811,20 @@ export class GameFramework {
 
   initServerState(lobbyData) {
     const state = this.engine.getInitialState();
-    state.status = 'waiting';
+    state.status = this.hasLobby ? 'waiting' : 'playing';
+    state.started = !this.hasLobby; // Skip lobby if game doesn't need it
     state.teams = {};
     state.slots = [];
+    
+    // Initialize default colors for FFA/Coop seats
+    if (this.seating.archetype === 'ffa' || this.seating.archetype === 'coop') {
+       const min = this.seating.minPlayers || 2;
+       for (let i = 0; i < min; i++) {
+          const colorIdx = (i % (GameFramework.COLORS.length - 1)) + 1;
+          const team = this.seating.archetype === 'coop' ? '_coop' : '_default';
+          state.slots.push({ id: null, name: 'Waiting...', team, color: GameFramework.COLORS[colorIdx].name });
+       }
+    }
 
     // 2. Auto-Assign available players (Randomized)
     this.autoAssignPlayers(state, lobbyData.players);
@@ -661,6 +887,7 @@ export class GameFramework {
   }
 
   isHost() {
+    if (!this.isOnline) return true; // Local mode: everyone is the host
     return window.currentLobbyData && window.currentLobbyData.hostId === window.CLIENT_ID;
   }
 
@@ -681,6 +908,9 @@ export class GameFramework {
        newState.winner = gameOver.winner;
        newState.winningLine = gameOver.winningLine;
     } else {
+       // Standard turn switching
+       newState.activeSlotIndex = (this.gameState.activeSlotIndex + 1) % this.gameState.slots.length;
+
        const oldSlot = this.gameState.activeSlotIndex;
        const newSlot = newState.activeSlotIndex;
        
@@ -725,12 +955,23 @@ export class GameFramework {
 
   resetLocalGame() {
     this.gameState = this.engine.getInitialState();
-    this.gameState.status = 'waiting';
+    this.gameState.status = this.hasLobby ? 'waiting' : 'playing';
+    this.gameState.started = !this.hasLobby; // Skip lobby if game doesn't need it
     this.gameState.teams = {};
     
     // 1. Generate initial slots & teams based on seating config
     const initialSlots = [];
-    if (this.seating.archetype === 'teams') {
+    if (this.seating.archetype === 'ffa' || this.seating.archetype === 'coop') {
+       const min = this.seating.minPlayers || 2;
+       for (let i = 0; i < min; i++) {
+          const colorIdx = (i % (GameFramework.COLORS.length - 1)) + 1;
+          const team = this.seating.archetype === 'coop' ? '_coop' : '_default';
+          initialSlots.push({ id: null, name: 'Waiting...', team, color: GameFramework.COLORS[colorIdx].name });
+       }
+       if (this.seating.archetype === 'coop') {
+          this.gameState.teams['_coop'] = { name: this.seating.teamName || 'Team', color: this.seating.color || 'Mint' };
+       }
+    } else if (this.seating.archetype === 'teams') {
        this.seating.teams.forEach(t => {
           this.gameState.teams[t.id] = { name: t.name, color: t.color || 'Neutral' };
           for (let i = 0; i < t.min; i++) {
@@ -916,14 +1157,38 @@ export class GameFramework {
   }
 
   async saveTeamSettings(teamKey) {
-    const input = document.getElementById(`edit-name-${teamKey}`);
-    const newName = input.value.trim() || this.gameState.teams[teamKey].name;
-    const color = this.gameState.teams[teamKey].color; // Already updated via updateTeamUI
-    
-    this.gameState.teams[teamKey].name = newName;
-    this.editingTeamKey = null;
-    await this.commit(this.gameState);
-    this.renderSeatingUI();
+     const input = document.getElementById(`edit-name-${teamKey}`);
+     const newName = input.value.trim() || this.gameState.teams[teamKey].name;
+     const color = this.gameState.teams[teamKey].color; // Already updated via updateTeamUI
+     
+     this.gameState.teams[teamKey].name = newName;
+     this.editingTeamKey = null;
+     await this.commit(this.gameState);
+     this.renderSeatingUI();
+  }
+
+  async swapTeams() {
+     if (!this.gameState || !this.seating.teams || this.seating.teams.length !== 2) return;
+     
+     const teamAKey = this.seating.teams[0].id;
+     const teamBKey = this.seating.teams[1].id;
+     
+     const newState = { ...this.gameState };
+     newState.slots = this.gameState.slots.map(slot => {
+        if (slot.team === teamAKey) return { ...slot, team: teamBKey };
+        if (slot.team === teamBKey) return { ...slot, team: teamAKey };
+        return slot;
+     });
+     
+     // Re-sort slots by team to maintain order if using teams
+     newState.slots.sort((a,b) => {
+        const order = [teamAKey, teamBKey, '_default', '_spec'];
+        return order.indexOf(a.team) - order.indexOf(b.team);
+     });
+
+     await this.commit(newState);
+     this.renderSeatingUI();
+     if (window.Notify) window.Notify.toast("Teams Swapped!");
   }
 
   cancelTeamEdit() {
@@ -1012,11 +1277,6 @@ export class GameFramework {
     this.renderSeatingUI();
   }
 
-  async startGame() {
-    if (!this.isHost()) return;
-    const newState = { ...this.gameState, status: 'playing' };
-    await this.commit(newState);
-  }
 
   renderFrameworkUI() {
     if (!this.gameState) return;
@@ -1063,6 +1323,8 @@ export class GameFramework {
 
        if (status === 'waiting') {
           // --- LOBBY WAITING PHASE ---
+          this.dom.turnIndicator.classList.add('text-gradient');
+          this.dom.turnIndicator.style.webkitTextFillColor = 'transparent';
           this.dom.turnIndicator.innerText = "Lobby: Assigning Players";
           
           if (this.dom.resetBtn) {
@@ -1077,38 +1339,55 @@ export class GameFramework {
           }
 
           if (this.gameState.winner === 'draw') {
+             this.dom.turnIndicator.classList.add('text-gradient');
+             this.dom.turnIndicator.style.webkitTextFillColor = 'transparent';
              this.dom.turnIndicator.innerText = "It's a Draw!";
              this.showGameOver('draw');
           } else if (this.gameState.winner === 'defeat') {
+             this.dom.turnIndicator.classList.add('text-gradient');
+             this.dom.turnIndicator.style.webkitTextFillColor = 'transparent';
              this.dom.turnIndicator.innerText = "Mission Failed! ❌";
              this.showGameOver('defeat');
           } else {
              const winners = Array.isArray(this.gameState.winner) ? this.gameState.winner : [this.gameState.winner];
-             const slotData = this.gameState.slots[winners[0]];
-             const teamKey = slotData.team || '_default';
-             const teamState = (this.gameState.teams && this.gameState.teams[teamKey]) || { color: 'Neutral' };
-             const colors = GameFramework.COLORS;
-             const colorMeta = colors.find(c => c.name === teamState.color) || colors[0];
+             const winnerColor = this.getSlotColor(winners[0]);
+             
+             this.dom.turnIndicator.classList.remove('text-gradient');
+             this.dom.turnIndicator.style.webkitTextFillColor = 'initial';
 
              if (winners.length === 1 && winners[0] === this.mySlotIndex) {
-                 this.dom.turnIndicator.innerText = `You Win!`;
+                 this.dom.turnIndicator.innerHTML = `<span style="color: ${winnerColor}; font-weight: 800;">YOU WIN!</span>`;
              } else {
                  const winnerNames = winners.map(idx => this.gameState.slots[idx].name).join(' & ');
-                 this.dom.turnIndicator.innerHTML = `<span style="color: ${colorMeta.value}; font-weight: 800;">${winnerNames}</span> Wins!`;
+                 this.dom.turnIndicator.innerHTML = `<span style="color: ${winnerColor}; font-weight: 800;">${winnerNames}</span> Wins!`;
              }
              this.showGameOver(winners[0]); 
           }
        } else {
           // --- PLAYING ---
           if (this.dom.resetBtn) {
-             this.dom.resetBtn.innerText = "Reset";
              this.dom.resetBtn.disabled = this.isOnline && !this.isHost();
              this.dom.resetBtn.onclick = () => this.isOnline ? (this.isHost() && this.resetOnlineGame()) : this.resetLocalGame();
           }
 
-          const activeName = this.gameState.slots[this.gameState.activeSlotIndex].name;
+          const activeSlot = this.gameState.slots[this.gameState.activeSlotIndex];
           const isMyTurn = (this.mySlotIndex === this.gameState.activeSlotIndex);
-          this.dom.turnIndicator.innerText = isMyTurn ? "Your Turn" : `${activeName}'s Turn`;
+          const teamColor = this.getSlotColor(this.gameState.activeSlotIndex);
+          
+          const nameToDisplay = isMyTurn ? "YOUR" : `${activeSlot.name.toUpperCase()}'S`;
+          
+          // Look for a symbol (like X or O) in the team config
+          let symbolSuffix = "";
+          if (this.seating.archetype === 'teams' && activeSlot.team) {
+             const teamCfg = this.seating.teams.find(t => t.id === activeSlot.team);
+             if (teamCfg && teamCfg.symbol) {
+                symbolSuffix = ` (${teamCfg.symbol.toUpperCase()})`;
+             }
+          }
+          
+          this.dom.turnIndicator.classList.remove('text-gradient');
+          this.dom.turnIndicator.style.webkitTextFillColor = 'initial'; // Override transparent
+          this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${nameToDisplay} TURN${symbolSuffix}</span>`;
           
           if (this.dom.gameOverOverlay) {
              this.dom.gameOverOverlay.classList.remove('visible');

@@ -18,6 +18,7 @@ class DummyEngine {
   handleAction(state, action, slotIndex) {
     return state; // No-op for testing
   }
+  static hasSettings = true;
 }
 
 // 1. Setup Dummy Data for the Template Testbed
@@ -49,25 +50,13 @@ const framework = new GameFramework({
   seating: {
     archetype: 'teams',
     minPlayers: 2,
-    maxPlayers: 10,
+    maxPlayers: 4,
     teams: [
       { id: 'judge', name: 'The Judge', min: 1, max: 1, color: 'Coral' },
-      { id: 'ffa', name: 'Competition Pool', min: 1, max: 5, color: 'Mint' }
+      { id: 'ffa', name: 'Competition Pool', min: 1, max: 3, color: 'Mint' }
     ]
   },
-  engine: DummyEngine,
-  ui: {
-    render: (state, fw) => {
-      // Background template UI
-      const canvas = document.querySelector('.game-canvas');
-      canvas.innerHTML = `
-        <div style="text-align:center;">
-          <p>Seating Stress Test Active</p>
-          <p style="font-size:0.8rem; opacity:0.6;">Open 'Players' in bottom sheet to test dragging.</p>
-        </div>
-      `;
-    }
-  }
+  engine: DummyEngine
 });
 
 // Expose globally
@@ -78,7 +67,6 @@ framework.init();
 
 // Hook up Template UI
 const sheet = document.getElementById('control-sheet');
-const footerTrigger = document.getElementById('footer-trigger');
 const overlay = document.getElementById('sheet-overlay');
 const sheetHeader = document.getElementById('sheet-header-close');
 
@@ -87,7 +75,6 @@ function toggleSheet() {
   overlay.classList.toggle('hidden', !isActive);
 }
 
-footerTrigger.addEventListener('click', toggleSheet);
 overlay.addEventListener('click', toggleSheet);
 sheetHeader.addEventListener('click', toggleSheet);
 

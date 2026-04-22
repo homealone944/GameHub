@@ -40,5 +40,12 @@ export const TicTacToeEngine = {
 
     return null;
   },
-  hasSettings: false
+  hasSettings: false,
+  getRulesHTML: () => `
+    <ul style="padding-left: 1rem; margin-top: 0.5rem;">
+      <li>Players alternate turns placing their marks (X or O) on a 3x3 grid.</li>
+      <li>The first player to get 3 of their marks in a horizontal, vertical, or diagonal row wins!</li>
+      <li>If all 9 squares are filled and no player has 3 in a row, the game is a draw.</li>
+    </ul>
+  `
 };
