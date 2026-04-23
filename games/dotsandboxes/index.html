@@ -21,20 +21,20 @@
     
     <!-- Premium Multi-Item Status Bar (Hoisted by framework) -->
     <div id="game-status-bar" class="status-bar-premium">
-       <div class="status-item">
-         <div class="status-label">STATUS</div>
-         <div id="turn-indicator" class="status-value highlight" style="font-size: 1.1rem;">P1 TURN</div>
-       </div>
-       <div class="status-divider"></div>
-       <div class="status-item">
-         <div class="status-label">P1 SCORE</div>
-         <div id="score-p1" class="status-value" style="color: #3b82f6;">0</div>
-       </div>
-       <div class="status-divider"></div>
-       <div class="status-item">
-         <div class="status-label">P2 SCORE</div>
-         <div id="score-p2" class="status-value" style="color: #ef4444;">0</div>
-       </div>
+        <div class="status-item">
+          <div class="status-label">STATUS</div>
+          <div id="turn-indicator" class="status-value highlight" style="font-size: 1rem; font-weight: 800;">STARTING...</div>
+        </div>
+        <div class="status-divider"></div>
+        <div class="status-item">
+          <div id="label-p1" class="status-label">P1 SCORE</div>
+          <div id="score-p1" class="status-value" style="color: #3b82f6; font-weight: 800;">0</div>
+        </div>
+        <div class="status-divider"></div>
+        <div class="status-item">
+          <div id="label-p2" class="status-label">P2 SCORE</div>
+          <div id="score-p2" class="status-value" style="color: #ef4444; font-weight: 800;">0</div>
+        </div>
     </div>
 
     <!-- The actual game board container -->
@@ -43,47 +43,10 @@
           <!-- DOTS and LINES via JS -->
        </div>
     </div>
-
-    <!-- Settings Modal (Specific to this game) -->
-    <div id="settings-modal" class="modal hidden">
-      <div class="modal-content text-left">
-        <h2 class="text-gradient">Game Settings</h2>
-        <button class="btn-close" id="btn-close-settings">&times;</button>
-        
-        <div class="settings-group mt-1" style="text-align: center;">
-          <label style="color:var(--text-secondary); display:block; margin-bottom:0.5rem;">Grid Size (Dots)</label>
-          <div style="display:flex; gap:1rem; align-items:center; justify-content:center;">
-            <input type="number" id="input-cols" min="3" max="15" value="5" style="background:var(--bg-secondary); border:1px solid rgba(255,255,255,0.1); color:white; padding:0.5rem; border-radius:8px; width:70px; text-align:center;">
-            <span style="color:var(--text-secondary);">×</span>
-            <input type="number" id="input-rows" min="3" max="15" value="5" style="background:var(--bg-secondary); border:1px solid rgba(255,255,255,0.1); color:white; padding:0.5rem; border-radius:8px; width:70px; text-align:center;">
-          </div>
-        </div>
-
-        <div style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--accent-coral); opacity: 0.8;">
-          ⚠️ Changing size will restart the current game.
-        </div>
-
-    <!-- Rules Modal (Specific to this game's local logic) -->
-    <div id="rules-modal" class="modal hidden">
-      <div class="modal-content text-left">
-        <h2 class="text-gradient">How to Play</h2>
-        <button class="btn-close" id="btn-close-rules">&times;</button>
-        
-        <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
-          <ul style="padding-left: 1rem; margin-top: 0.5rem;">
-            <li>Players alternate turns joining two adjacent dots with a line.</li>
-            <li>Completing a 1x1 Box earns one point and an extra turn!</li>
-            <li>The player with the most boxes at the end wins.</li>
-          </ul>
-        </div>
-        <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
-      </div>
-    </div>
-
   </div>
 
   <script src="../../js/notify.js"></script>
   <script src="../../js/lobby-shell.js" type="module"></script>
-  <script src="game.js"></script>
+  <script src="game.js" type="module"></script>
 </body>
 </html>

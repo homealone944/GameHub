@@ -3,14 +3,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: auto;
+  margin: 1rem auto;
   user-select: none;
   background-color: rgba(255, 255, 255, 0.02);
-  padding: 30px;
+  padding: 40px;
   border-radius: var(--border-radius);
+  min-height: 400px;
   /* Responsive variables */
-  --dot-size: 10px;
-  --line-thick: 16px;
+  --dot-size: 12px;
+  --line-thick: 18px;
 }
 
 @media (max-width: 600px), (max-height: 800px) {
