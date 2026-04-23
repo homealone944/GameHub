@@ -56,8 +56,9 @@
 }
 
 .card.bystander {
-  background: #d97706 !important;
-  color: #451a03 !important;
+  background: #4b5563 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255,255,255,0.1);
 }
 
 .card.partial-bystander {
@@ -70,7 +71,8 @@
   height: 14px;
   border-radius: 50%;
   bottom: 6px;
-  background: #d97706;
+  background: #4b5563;
+  border: 1px solid rgba(255,255,255,0.2);
 }
 .bystander-token.p1 { left: 6px; }
 .bystander-token.p2 { right: 6px; }
@@ -93,45 +95,73 @@
   padding: 10px;
   border: 1px solid rgba(255,255,255,0.05);
   flex-shrink: 0;
+  min-height: 160px; /* Reserve space to prevent layout jumps */
 }
 
 .log-scroll {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding-bottom: 5px;
+  padding-bottom: 8px;
   scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 
+/* Custom Horizontal Scrollbar */
+.log-scroll::-webkit-scrollbar { height: 6px; }
+.log-scroll::-webkit-scrollbar-track { background: transparent; }
+.log-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+.log-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
+
 .log-entry {
-  min-width: 140px;
+  min-width: 150px;
+  height: 180px; /* Fixed height to allow inner scrolling */
   background: var(--bg-secondary);
   border-radius: 8px;
-  padding: 8px;
+  padding: 10px;
   font-size: 0.8rem;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   border-top: 3px solid #666;
+  flex-shrink: 0;
 }
 
 .player1-log { border-top-color: #3b82f6; }
 .player2-log { border-top-color: #ef4444; }
 
-.log-player { font-weight: 800; font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); }
-.log-clue { font-weight: 900; font-size: 1rem; color: var(--text-primary); }
+.log-player { font-weight: 800; font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 2px; }
+.log-clue { font-weight: 900; font-size: 1rem; color: var(--text-primary); margin-bottom: 8px; flex-shrink: 0; }
 
-.log-guesses { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.log-guesses { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 6px; 
+  overflow-y: auto; 
+  flex: 1; 
+  padding-right: 4px;
+  /* Firefox Support */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+/* Custom Vertical Scrollbar */
+.log-guesses::-webkit-scrollbar { width: 4px; }
+.log-guesses::-webkit-scrollbar-track { background: transparent; }
+.log-guesses::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+.log-guesses::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
 .guess-pill {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.65rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
+  text-align: center;
+  width: 100%;
 }
 .guess-agent { background: #10b981; color: #064e3b; }
 .guess-assassin { background: #ef4444; color: #fff; }
-.guess-bystander { background: #d97706; color: #451a03; }
+.guess-bystander { background: #334155; color: #cbd5e1; }
 
 /* Control Area */
 .phase-ui {
@@ -140,6 +170,15 @@
   justify-content: center;
   align-items: center;
   width: 100%;
+  min-height: 80px; /* Base height for all phase controls */
+}
+
+.action-bay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 60px;
 }
 
 .clue-input-container {

@@ -38,6 +38,7 @@ const framework = new GameFramework({
       const agentsFoundEl = document.getElementById('agents-found');
       const clueInputArea = document.getElementById('clue-input-area');
       const btnEndTurn = document.getElementById('btn-end-turn');
+      const actionBay = document.getElementById('action-bay');
       const btnStartGame = document.getElementById('btn-start-game');
 
       // 1. Metrics & Status
@@ -52,21 +53,23 @@ const framework = new GameFramework({
       const isMyTurn = (fw.isOnline && fw.mySlotIndex === state.activeSlotIndex) || (!fw.isOnline);
       
       if (state.status === 'finished') {
-         clueInputArea.classList.add('hidden');
-         btnEndTurn.classList.add('hidden');
+         if (actionBay) actionBay.classList.add('hidden');
          btnStartGame.classList.add('hidden');
       } else if (state.phase === 'setup') {
-         clueInputArea.classList.add('hidden');
-         btnEndTurn.classList.add('hidden');
+         if (actionBay) actionBay.classList.add('hidden');
          btnStartGame.classList.toggle('hidden', fw.isOnline && !fw.isHost());
-      } else if (state.phase === 'intel') {
-         clueInputArea.classList.toggle('hidden', !isMyTurn);
-         btnEndTurn.classList.add('hidden');
+      } else {
+         // Playing: Intel or Guessing
+         if (actionBay) actionBay.classList.remove('hidden');
          btnStartGame.classList.add('hidden');
-      } else if (state.phase === 'guessing') {
-         clueInputArea.classList.add('hidden');
-         btnEndTurn.classList.toggle('hidden', !isMyTurn);
-         btnStartGame.classList.add('hidden');
+
+         if (state.phase === 'intel') {
+            clueInputArea.classList.toggle('hidden', !isMyTurn);
+            btnEndTurn.classList.add('hidden');
+         } else if (state.phase === 'guessing') {
+            clueInputArea.classList.add('hidden');
+            btnEndTurn.classList.toggle('hidden', !isMyTurn);
+         }
       }
 
       // 3. Status/Peek Actions
@@ -168,13 +171,14 @@ function renderLog(state, fw) {
     guessesHTML += '</div>';
 
     el.innerHTML = `
-      <span class="log-player">${pName}</span>
+      <span class="log-player">SOURCE: ${pName}</span>
       <span class="log-clue">${entry.clue}</span>
       ${guessesHTML}
     `;
     clueLogEl.appendChild(el);
   });
-  if (clueLogEl.parentElement) clueLogEl.parentElement.scrollLeft = clueLogEl.parentElement.scrollWidth;
+  // Auto-scroll to the furthest right as more clues come in
+  clueLogEl.scrollLeft = clueLogEl.scrollWidth;
 }
 
 /**

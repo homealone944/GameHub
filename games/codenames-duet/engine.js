@@ -244,13 +244,15 @@ function transitionToIntel(state, lastGuesser) {
   if (hasAgents(nextPlayer)) {
     state.activeSlotIndex = nextPlayer;
     state.phase = 'intel';
-    state.statusText = `${state.slots[nextPlayer].name} is GIVING CLUE`;
-    state.blockerTitle = "MISSION Intel FOR " + state.slots[nextPlayer].name;
+    state.statusText = `${state.slots[nextPlayer].name} is gathering Intel`;
+    // state.blockerTitle = "Intel from " + state.slots[nextPlayer].name;
+    state.blockerTitle = "TRANSFERRING INTEL";
   } else if (hasAgents(otherPlayer)) {
     state.activeSlotIndex = otherPlayer;
     state.phase = 'intel';
-    state.statusText = `${state.slots[otherPlayer].name} is GIVING CLUE`;
-    state.blockerTitle = "MISSION Intel FOR " + state.slots[otherPlayer].name;
+    state.statusText = `${state.slots[otherPlayer].name} is gathering Intel`;
+    state.blockerTitle = "TRANSFERRING INTEL";
+    // state.blockerTitle = "Intel from " + state.slots[otherPlayer].name;
   } else {
     // No one has any agents left! Should have triggered victory already, 
     // but safety fallback to finishing.
