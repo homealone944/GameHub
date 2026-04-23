@@ -89,9 +89,9 @@ export class GameShell {
           <!-- Exit to Hub Button -->
           <button id="fw-btn-lobby-hub" class="btn-close" style="top: 1rem; left: 1rem; right: auto; font-size: 1.2rem; transform: scaleX(1.5);" title="Return to Hub">&lsaquo;</button>
 
-          <h1 class="text-gradient" id="fw-lobby-title" style="font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -1px;">READY?</h1>
+          <h1 class="text-gradient" id="fw-lobby-title" style="font-size: 2.5rem; margin-bottom: 0.5rem; letter-spacing: -1px;">SETUP</h1>
           <p id="fw-lobby-desc" style="color: var(--text-secondary); margin-bottom: 2.5rem; font-weight: 500;">
-            Adjust players or start the Game when ready.
+            Start the game when ready!
           </p>
 
           <!-- Host / Local Controls -->
@@ -99,22 +99,22 @@ export class GameShell {
             <button id="fw-btn-start" class="btn btn-mint w-100" style="padding: 1.25rem; font-size: 1.1rem; font-weight: 900; letter-spacing: 2px;">START GAME</button>
             
             <div style="display: flex; gap: 1rem; width: 100%;">
-              <button id="fw-btn-lobby-players" class="btn btn-secondary w-100" style="background: rgba(255,255,255,0.05); color: white; padding: 1rem; flex: 1;">
-                <span style="font-size: 1.2rem; margin-right: 8px;">👥</span> Players
+              <button id="fw-btn-lobby-players" class="btn btn-secondary w-100" style="background: rgba(255,255,255,0.05); color: white; padding: 1rem; flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="font-size: 1.2rem; margin-right: 10px; display: inline-flex; width: 24px; justify-content: center;">👥</span> Players
               </button>
-              <button id="fw-btn-lobby-settings" class="btn btn-secondary w-100" style="background: rgba(255,255,255,0.05); color: white; padding: 1rem; flex: 1;">
-                <span style="font-size: 1.2rem; margin-right: 8px;">⚙️</span> Settings
+              <button id="fw-btn-lobby-settings" class="btn btn-secondary w-100" style="background: rgba(255,255,255,0.05); color: white; padding: 1rem; flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="font-size: 1.2rem; margin-right: 10px; display: inline-flex; width: 24px; justify-content: center;">⚙️</span> Settings
               </button>
             </div>
           </div>
           
           <!-- Guest View -->
           <div id="fw-guest-controls" class="hidden" style="width: 100%; display: flex; flex-direction: column; gap: 1rem;">
-             <div style="padding: 1.25rem; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); color: var(--accent-coral); font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
+             <div style="padding: 1.25rem; background: rgba(255,255,255,0.03); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); color: var(--accent-coral); font-weight: 800; font-size: 0.9rem; letter-spacing: 1px; text-align: center;">
                 WAITING FOR HOST TO START...
              </div>
-             <button id="fw-btn-lobby-players-guest" class="btn btn-secondary w-100" style="background: rgba(255,255,255,0.05); color: white; padding: 1rem;">
-                <span style="font-size: 1.2rem; margin-right: 8px;">👥</span> Players
+             <button id="fw-btn-lobby-players-guest" class="btn btn-secondary w-100" style="background: rgba(255,255,255,0.05); color: white; padding: 1rem; display: flex; align-items: center; justify-content: center; font-weight: 800; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="font-size: 1.2rem; margin-right: 10px; display: inline-flex; width: 24px; justify-content: center;">👥</span> Players
              </button>
           </div>
 
@@ -136,7 +136,7 @@ export class GameShell {
           <div id="rules-content-body" style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.6; font-size: 0.95rem;">
             <!-- Content injected via Engine.getRulesHTML() -->
           </div>
-          <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Got it</button>
+          <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Understood</button>
         </div>
       </div>
     `;

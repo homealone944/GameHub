@@ -25,17 +25,43 @@ export const TicTacToeEngine = {
     return newState;
   },
 
-  checkGameOver: (state, lastSlotIndex) => {
+  checkGameOver: (state, lastSlotIndex, mySlotIndex, isOnline) => {
     const symbol = lastSlotIndex === 0 ? 'X' : 'O';
     
     for (const combo of WINNING_COMBINATIONS) {
       if (combo.every(idx => state.board[idx] === symbol)) {
-        return { winner: lastSlotIndex, winningLine: combo };
+        let title = "VICTORY";
+        let subtitle = "A masterclass in strategy! 🏆";
+
+        if (!isOnline) {
+          title = "GAME OVER";
+          subtitle = `${symbol} WON!`;
+        } else if (mySlotIndex !== null) {
+          if (mySlotIndex === lastSlotIndex) {
+            title = "VICTORY";
+            subtitle = "YOU WON";
+          } else {
+            const winnerName = state.slots ? state.slots[lastSlotIndex].name : symbol;
+            title = "DEFEAT";
+            subtitle = `${winnerName} WON!`;
+          }
+        }
+
+        return { 
+          winner: lastSlotIndex, 
+          winningLine: combo,
+          title,
+          subtitle
+        };
       }
     }
 
     if (!state.board.includes(null)) {
-      return { winner: 'draw', winningLine: [] };
+      return { 
+        winner: 'draw', 
+        winningLine: [],
+        subtitle: "A perfectly balanced match! 🤝"
+      };
     }
 
     return null;

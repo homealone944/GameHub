@@ -44,10 +44,15 @@ function initLobbyShell() {
   // Make Hub/Logo links lobby-aware
   makeLinksLobbyAware();
 
-  // Start Garbage Collector (Lobby Cleanup)
-  startGarbageCollector();
+  // Start Garbage Collector (Lobby Cleanup) - Skip in local mode
+  const mode = urlParams.get('mode');
+  const isLocal = mode === 'local';
 
-  if (LOBBY_ID) {
+  if (!isLocal) {
+    startGarbageCollector();
+  }
+
+  if (LOBBY_ID && !isLocal) {
     // Start Heartbeat for THIS lobby
     startHeartbeat();
     
@@ -458,8 +463,7 @@ async function startGarbageCollector() {
     } catch(e) { /* ignore */ }
   };
 
-  // Run once on load, then every 5 mins
-  performCleanup();
+  // Run every 5 mins (Removed eager load-time call to keep local mode silent)
   setInterval(performCleanup, 5 * 60 * 1000);
 }
 

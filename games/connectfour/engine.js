@@ -5,6 +5,10 @@ export const COLS = 7;
 export const ConnectFourEngine = {
   getInitialState: () => ({
     board: Array(ROWS * COLS).fill(null),
+    activeSlotIndex: 0,
+    status: 'playing',
+    winner: null,
+    winningLine: null 
   }),
 
   applyMove: (state, colIndex, activeSlotIndex) => {
@@ -23,12 +27,16 @@ export const ConnectFourEngine = {
     if (targetRow === -1) return null; // Column is full
 
     board[targetRow * COLS + colIndex] = symbol;
-    return { ...state, board };
+    return { 
+      ...state, 
+      board,
+      activeSlotIndex: activeSlotIndex === 0 ? 1 : 0
+    };
   },
 
-  checkGameOver: (state, activeSlotIndex) => {
+  checkGameOver: (state, activeSlotIndex, mySlotIndex, isOnline) => {
     const board = state.board;
-    const symbol = activeSlotIndex === 0 ? 'R' : 'Y';
+    const colorName = activeSlotIndex === 0 ? 'RED' : 'YELLOW';
 
     const getCell = (r, c) => board[r * COLS + c];
 
@@ -37,26 +45,56 @@ export const ConnectFourEngine = {
         let p = getCell(r, c);
         if (!p) continue;
 
+        const checkWin = (line) => {
+          let title = "VICTORY";
+          let subtitle = "Vertical domination at its finest. 🔴🟡";
+
+          if (!isOnline) {
+             title = "GAME OVER";
+             subtitle = `${colorName} WON!`;
+          } else if (mySlotIndex !== null) {
+             if (mySlotIndex === activeSlotIndex) {
+                 title = "VICTORY";
+                 subtitle = "YOU WON";
+             } else {
+                 const winnerName = state.slots ? state.slots[activeSlotIndex].name : colorName;
+                 title = "DEFEAT";
+                 subtitle = `${winnerName} WON!`;
+             }
+          }
+
+          return { 
+            winner: activeSlotIndex, 
+            winningLine: line,
+            title,
+            subtitle
+          };
+        };
+
         // Horizontal
         if (c + 3 < COLS && p === getCell(r, c + 1) && p === getCell(r, c + 2) && p === getCell(r, c + 3)) {
-          return { winner: activeSlotIndex, winningLine: [r * COLS + c, r * COLS + (c + 1), r * COLS + (c + 2), r * COLS + (c + 3)] };
+          return checkWin([r * COLS + c, r * COLS + (c + 1), r * COLS + (c + 2), r * COLS + (c + 3)]);
         }
         // Vertical
         if (r + 3 < ROWS && p === getCell(r + 1, c) && p === getCell(r + 2, c) && p === getCell(r + 3, c)) {
-          return { winner: activeSlotIndex, winningLine: [r * COLS + c, (r + 1) * COLS + c, (r + 2) * COLS + c, (r + 3) * COLS + c] };
+          return checkWin([r * COLS + c, (r + 1) * COLS + c, (r + 2) * COLS + c, (r + 3) * COLS + c]);
         }
         // Diagonal Down-Right
         if (r + 3 < ROWS && c + 3 < COLS && p === getCell(r + 1, c + 1) && p === getCell(r + 2, c + 2) && p === getCell(r + 3, c + 3)) {
-          return { winner: activeSlotIndex, winningLine: [r * COLS + c, (r + 1) * COLS + (c + 1), (r + 2) * COLS + (c + 2), (r + 3) * COLS + (c + 3)] };
+          return checkWin([r * COLS + c, (r + 1) * COLS + (c + 1), (r + 2) * COLS + (c + 2), (r + 3) * COLS + (c + 3)]);
         }
         // Diagonal Down-Left
         if (r + 3 < ROWS && c - 3 >= 0 && p === getCell(r + 1, c - 1) && p === getCell(r + 2, c - 2) && p === getCell(r + 3, c - 3)) {
-          return { winner: activeSlotIndex, winningLine: [r * COLS + c, (r + 1) * COLS + (c - 1), (r + 2) * COLS + (c - 2), (r + 3) * COLS + (c - 3)] };
+          return checkWin([r * COLS + c, (r + 1) * COLS + (c - 1), (r + 2) * COLS + (c - 2), (r + 3) * COLS + (c - 3)]);
         }
       }
     }
 
-    if (!board.includes(null)) return { winner: 'draw', winningLine: [] };
+    if (!board.includes(null)) return { 
+      winner: 'draw', 
+      winningLine: [],
+      subtitle: "The board is full! No more room to drop. 🤝"
+    };
     return null;
   },
   hasSettings: false,

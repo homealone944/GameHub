@@ -42,7 +42,7 @@ const framework = new GameFramework({
 
       // 1. Metrics & Status
       if (activePlayerDisplay) {
-         activePlayerDisplay.innerText = state.phase === 'setup' ? "START" : `${state.slots[state.activeSlotIndex].name}: ${state.phase.toUpperCase()}`;
+         activePlayerDisplay.innerText = state.phase === 'setup' ? "Briefing" : `${state.slots[state.activeSlotIndex].name}: ${state.phase.toUpperCase()}`;
          activePlayerDisplay.style.color = state.activeSlotIndex === 0 ? "#3b82f6" : "#ef4444";
       }
       if (agentsFoundEl) agentsFoundEl.innerText = state.greensFound;
@@ -69,7 +69,15 @@ const framework = new GameFramework({
          btnStartGame.classList.add('hidden');
       }
 
-      // 3. Render Log & Board
+      // 3. Status/Peek Actions
+      const btnPeek = document.getElementById('btn-peek-all');
+      if (btnPeek) {
+         if (!btnPeek.onclick) btnPeek.onclick = () => fw.handleAction({ type: 'toggleReveal' });
+         btnPeek.style.background = state.revealAll ? "rgba(16, 185, 129, 0.2)" : "transparent";
+         btnPeek.style.borderRadius = "8px";
+      }
+
+      // 4. Render Log & Board
       renderLog(state, fw);
       renderBoard(state, fw);
     }
@@ -87,9 +95,9 @@ function renderBoard(state, fw) {
 
   // Intel Key Visibility
   let myIntelKey = null;
-  if (state.status === 'finished') {
-      // Show all info when game is over
-  } else if (state.phase === 'intel') {
+  const isFinished = state.status === 'finished' || state.revealAll;
+
+  if (!isFinished && state.phase === 'intel') {
      if (fw.isOnline) {
         if (fw.mySlotIndex === state.activeSlotIndex) myIntelKey = (state.activeSlotIndex === 0 ? state.p1Key : state.p2Key);
      } else {
@@ -127,8 +135,8 @@ function renderBoard(state, fw) {
        else if (type === 2) cardEl.classList.add('intel-black');
     }
 
-    // Game Over Reveal
-    if (state.status === 'finished') {
+    // Game Over / Peek Reveal
+    if (isFinished) {
        cardEl.classList.add('revealed', 'reveal-border-mode');
        const p1X = state.p1Key[i];
        const p2X = state.p2Key[i];

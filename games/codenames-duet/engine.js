@@ -1,10 +1,13 @@
 /* games/codenames-duet/engine.js */
+import { DEFAULT_WORDS } from './words.js';
 
 export const ROWS = 5;
 export const COLS = 5;
 
 export const CodenamesEngine = {
   getInitialState: (config = {}) => {
+    // Preserve config in state if provided
+    const maxTurns = parseInt(config.maxTurns) || 9;
     const words = generateWords(config.customWords);
     const keys = generateKeysInternal();
     return {
@@ -12,26 +15,32 @@ export const CodenamesEngine = {
       p1Key: keys.p1,
       p2Key: keys.p2,
       revealed: Array(25).fill(null),
-      activeSlotIndex: 0, // Slot 0 (Agent 1) or Slot 1 (Agent 2)
+      activeSlotIndex: null, // No active player until start
       phase: 'setup',
-      turnsLeft: config.maxTurns || 9,
-      status: 'playing', // 'playing' or 'finished'
+      turnsLeft: maxTurns,
+      config: config,
+      status: 'playing', 
       winner: null,
       greensFound: 0,
-      log: []
+      log: [],
+      revealAll: false
     };
   },
 
   applyMove: (state, action, slotIndex) => {
+    if (action.type === 'toggleReveal') {
+      const ns = JSON.parse(JSON.stringify(state));
+      ns.revealAll = !ns.revealAll;
+      return ns;
+    }
     if (state.status === 'finished') return null;
     const newState = { ...state, log: [...state.log] };
 
     // Initial Start Action
     if (action.type === 'start') {
       if (newState.phase !== 'setup') return null;
-      newState.phase = 'intel';
-      newState.activeSlotIndex = 0;
-      return newState;
+      newState.status = 'playing'; 
+      return transitionToIntel(newState, 0);
     }
 
     // Clue Submission (Intel Phase)
@@ -47,6 +56,7 @@ export const CodenamesEngine = {
       newState.turnsLeft--;
       newState.activeSlotIndex = slotIndex === 0 ? 1 : 0;
       newState.phase = 'guessing';
+      newState.statusText = `${newState.slots[newState.activeSlotIndex].name} is GUESSING`;
       return newState;
     }
 
@@ -87,11 +97,11 @@ export const CodenamesEngine = {
         }
         currentLog.guesses.push({ word: wordStr, type: 'bystander' });
         // Auto-end turn on bystander
-        newState.phase = 'intel';
-        // Check for out of turns
         if (newState.turnsLeft <= 0 && newState.greensFound < 15) {
           newState.status = 'finished';
           newState.winner = 'timeout';
+        } else {
+          return transitionToIntel(newState, slotIndex);
         }
       }
       return newState;
@@ -105,7 +115,7 @@ export const CodenamesEngine = {
         newState.status = 'finished';
         newState.winner = 'timeout';
       } else {
-        newState.phase = 'intel';
+        return transitionToIntel(newState, slotIndex);
       }
       return newState;
     }
@@ -113,14 +123,32 @@ export const CodenamesEngine = {
     return null;
   },
 
-  checkGameOver: (state) => {
+  checkGameOver: (state, lastSlotIndex, mySlotIndex, isOnline) => {
     if (state.status === 'finished') {
-       if (state.winner === 'victory') return { winner: 0 }; // 0 represents the whole team in Duet
-       return { winner: 'defeat' }; // Special case handled in framework? 
-       // NOTE: GameFramework expects winner to be an index for winners, or 'draw'
-       // I'll return [0,1] meaning both Slots won.
-       if (state.winner === 'victory') return { winner: [0, 1] };
-       return { winner: 'defeat' }; 
+       if (state.winner === 'victory') return { 
+         winner: 'victory',
+         title: "MISSION SUCCESS",
+         subtitle: `All 15 secret agents have been safely contacted! ✨`,
+         glowColor: "#4ecdc4" // Mint/Success
+       };
+       if (state.winner === 'assassin') return { 
+         winner: 'assassin',
+         title: "MISSION FAILED",
+         subtitle: `You contacted the Assassin! 💀`,
+         glowColor: "#ff6b6b" // Coral/Failure
+       };
+      if (state.winner === 'timeout') return {
+        winner: 'timeout',
+        title: "MISSION FAILED",
+        subtitle: "You ran out of time. Better luck next time, agents. 💀",
+        glowColor: "#ff6b6b" // Coral/Failure
+      };
+      else return { 
+         winner: 'defeat',
+         title: "MISSION FAILED",
+         subtitle: "The mission was compromised. Better luck next time, agents. 💀",
+         glowColor: "#ff6b6b" // Coral/Failure
+      }; 
     }
     return null;
   },
@@ -132,7 +160,47 @@ export const CodenamesEngine = {
     <p>Give your partner a one-word clue and a number. The number tells them how many Agents on their side relate to that word.</p>
     <h3 style="color: var(--text-primary); margin-top: 1rem;">Guessing Phase</h3>
     <p>Your partner taps cards to find Agents. If they find an Agent, they can keep guessing. Find a Bystander, and the turn ends. Hit an Assassin, and the mission fails immediately!</p>
-  `
+  `,
+
+  getSettingsHTML: (config = {}) => {
+    const turns = config.maxTurns || 9;
+    const wordlist = (config.customWords && config.customWords.length > 0) 
+      ? config.customWords.join(', ') 
+      : DEFAULT_WORDS.join(', ');
+
+    return `
+      <div class="fw-settings-group">
+        <label class="fw-settings-label">Turns <span class="range-val-badge">${turns}</span></label>
+        <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Time tokens available for the mission.</p>
+        <input type="range" name="maxTurns" value="${turns}" min="3" max="15" class="fw-settings-range" 
+               oninput="this.parentElement.querySelector('.range-val-badge').innerText = this.value">
+      </div>
+
+      <div class="fw-settings-group">
+        <label class="fw-settings-label">Word List Pool</label>
+        <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Edit the list below (comma separated) to customize the word pool.</p>
+        <textarea name="wordlist" class="fw-settings-textarea" spellcheck="false">${wordlist}</textarea>
+      </div>
+    `;
+  },
+
+  _defaultWordsCSV: DEFAULT_WORDS.join(', '),
+
+  applySettings: (formData) => {
+    const rawWords = formData.get('wordlist') || '';
+    const cleanWordList = rawWords.split(',')
+      .map(w => w.trim())
+      .filter(w => w.length > 0);
+
+    if (cleanWordList.length < 25) {
+      return { error: `Word list must have at least 25 words (Found ${cleanWordList.length})` };
+    }
+
+    return {
+      maxTurns: parseInt(formData.get('maxTurns')),
+      customWords: cleanWordList
+    };
+  }
 };
 
 /**
@@ -140,9 +208,7 @@ export const CodenamesEngine = {
  */
 
 function generateWords(custom = []) {
-  // Mock DEFAULT_WORDS if not imported
-  const FALLBACK_WORDS = ["APPLE","BANANA","CRANE","DOG","EAGLE","FLAME","GRAPE","HOUSE","ICE","JELLY","KITE","LEMON","MOUSE","NIGHT","OCEAN","PIZZA","QUEEN","RIVER","SNAKE","TIGER","UNDER","VINE","WHALE","XRAY","YACHT"];
-  let pool = (custom && custom.length >= 25) ? custom : FALLBACK_WORDS;
+  let pool = (custom && custom.length >= 25) ? custom : DEFAULT_WORDS;
   return [...pool].sort(() => 0.5 - Math.random()).slice(0, 25);
 }
 
@@ -159,4 +225,35 @@ function generateKeysInternal() {
     p2[i] = distribution[i][1];
   }
   return { p1, p2 };
+}
+
+function transitionToIntel(state, lastGuesser) {
+  // In Duet, the person who was just guessing is now the one who gives the clue.
+  const nextPlayer = lastGuesser;
+  const otherPlayer = lastGuesser === 0 ? 1 : 0;
+  
+  const hasAgents = (player) => {
+    const key = player === 0 ? state.p1Key : state.p2Key;
+    for (let i = 0; i < 25; i++) {
+       if (key[i] === 1 && state.revealed[i] !== 'green') return true;
+    }
+    return false;
+  };
+
+  // Check if target player has any info. If not, check the other player.
+  if (hasAgents(nextPlayer)) {
+    state.activeSlotIndex = nextPlayer;
+    state.phase = 'intel';
+    state.statusText = `${state.slots[nextPlayer].name} is GIVING CLUE`;
+    state.blockerTitle = "MISSION Intel FOR " + state.slots[nextPlayer].name;
+  } else if (hasAgents(otherPlayer)) {
+    state.activeSlotIndex = otherPlayer;
+    state.phase = 'intel';
+    state.statusText = `${state.slots[otherPlayer].name} is GIVING CLUE`;
+    state.blockerTitle = "MISSION Intel FOR " + state.slots[otherPlayer].name;
+  } else {
+    // No one has any agents left! Should have triggered victory already, 
+    // but safety fallback to finishing.
+  }
+  return state;
 }

@@ -1808,3 +1808,96 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
     opacity: 0; 
   }
 }
+
+/* Settings Modal Specifics */
+.fw-settings-group {
+  margin-bottom: 1.5rem;
+}
+
+.fw-settings-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.4rem;
+}
+
+.fw-settings-input, .fw-settings-select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: white;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fw-settings-input:focus, .fw-settings-select:focus {
+  outline: none;
+  background: rgba(255,255,255,0.08);
+  border-color: var(--accent-mint);
+  box-shadow: 0 0 0 4px rgba(0, 255, 178, 0.1);
+}
+
+.fw-settings-input::-webkit-inner-spin-button {
+  filter: invert(1);
+  opacity: 0.5;
+}
+
+.fw-settings-range {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 5px;
+  outline: none;
+  margin-top: 0.8rem;
+  accent-color: var(--accent-mint);
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.fw-settings-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-mint);
+  box-shadow: 0 0 10px rgba(0, 255, 178, 0.3);
+  cursor: pointer;
+}
+
+.fw-settings-textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: white;
+  padding: 1rem;
+  font-size: 0.85rem;
+  font-family: 'Inter', monospace;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 120px;
+  max-height: 300px;
+  transition: all 0.2s ease;
+}
+
+.fw-settings-textarea:focus {
+  outline: none;
+  border-color: var(--accent-mint);
+  background: rgba(255,255,255,0.06);
+}
+
+.range-val-badge {
+  background: var(--accent-mint);
+  color: #1a1a1a;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  margin-left: 8px;
+}

@@ -284,6 +284,31 @@ export class GameFramework {
     });
 
     document.getElementById('fw-btn-return-hub').addEventListener('click', () => this.returnToHub());
+
+    // 4. Settings Modal
+    const settingsHTML = `
+      <div id="fw-settings-modal" class="modal hidden" style="z-index: 10000;">
+        <div class="modal-content" style="max-height: 85vh; overflow-y: auto;">
+          <h2 class="text-gradient" style="margin-bottom: 4px;">Game Settings</h2>
+          <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 20px;">Adjust rules and preferences for the next match</p>
+          <button class="btn-close" id="fw-settings-close">&times;</button>
+          
+          <form id="fw-settings-form" style="margin-top: 1rem; text-align: left;">
+            <!-- Engine-specific settings here -->
+          </form>
+          
+          <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button id="fw-settings-reset" class="btn btn-secondary w-100" style="background: rgba(255,255,255,0.05); color: white; padding: 0.8rem;">Reset Defaults</button>
+            <button id="fw-settings-ok" class="btn btn-mint w-100" style="padding: 0.8rem;">Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', settingsHTML);
+    this.dom.settingsModal = document.getElementById('fw-settings-modal');
+    document.getElementById('fw-settings-close').addEventListener('click', () => this.closeSettingsModal());
+    document.getElementById('fw-settings-ok').addEventListener('click', () => this.saveSettings());
+    document.getElementById('fw-settings-reset').addEventListener('click', () => this.resetSettingsToDefault());
   }
 
   returnToHub() {
@@ -380,11 +405,57 @@ export class GameFramework {
   }
 
   openSettingsModal() {
-     if (window.Notify) {
-        window.Notify.toast("⚙️ Settings for this game are available in the bottom tray.");
-     } else {
-        alert("Settings for this game can be adjusted in the bottom sheet controls.");
+     const form = document.getElementById('fw-settings-form');
+     if (!form || !this.engine.getSettingsHTML) return;
+     
+     const currentConfig = (this.gameState && this.gameState.config) || {};
+     form.innerHTML = this.engine.getSettingsHTML(currentConfig);
+     
+     this.dom.settingsModal.classList.remove('hidden');
+  }
+
+  closeSettingsModal() {
+     if (this.dom.settingsModal) this.dom.settingsModal.classList.add('hidden');
+  }
+
+  saveSettings() {
+     const form = document.getElementById('fw-settings-form');
+     if (!form || !this.engine.applySettings) return;
+
+     const formData = new FormData(form);
+     const result = this.engine.applySettings(formData);
+     if (result && result.error) {
+        if (window.Notify) window.Notify.toast("❌ " + result.error);
+        return;
      }
+     const newConfig = result;
+
+     // Confirm and apply
+     if (this.isOnline) {
+        if (this.isHost()) {
+           this.resetOnlineGame(newConfig);
+        }
+     } else {
+        this.resetLocalGame(newConfig);
+     }
+     
+     this.closeSettingsModal();
+     if (window.Notify) window.Notify.toast("✅ Settings applied!");
+  }
+
+  resetSettingsToDefault() {
+     if (this.isOnline) {
+        if (this.isHost()) {
+           this.resetOnlineGame({});
+        } else {
+           if (window.Notify) window.Notify.toast("Only the Host can reset settings.");
+        }
+     } else {
+        this.resetLocalGame({});
+     }
+
+     this.closeSettingsModal();
+     if (window.Notify) window.Notify.toast("🔄 Settings reset to defaults!");
   }
 
   /**
@@ -829,21 +900,22 @@ export class GameFramework {
     // 2. Auto-Assign available players (Randomized)
     this.autoAssignPlayers(state, lobbyData.players);
 
-    state.activeSlotIndex = 0;
     this.commit(state);
   }
 
-  autoAssignPlayers(state, lobbyPlayers) {
+  autoAssignPlayers(state, lobbyPlayers, shouldShuffle = true) {
     if (!state || !state.slots) return;
     
     // Clear existing assignments first to start fresh
     state.slots.forEach(s => s.id = null);
     
-    // Fisher-Yates Shuffle
+    // Fisher-Yates Shuffle (Optional)
     const players = [...lobbyPlayers];
-    for (let i = players.length - 1; i > 0; i--) {
-       const j = Math.floor(Math.random() * (i + 1));
-       [players[i], players[j]] = [players[j], players[i]];
+    if (shouldShuffle) {
+      for (let i = players.length - 1; i > 0; i--) {
+         const j = Math.floor(Math.random() * (i + 1));
+         [players[i], players[j]] = [players[j], players[i]];
+      }
     }
 
     const available = [...players];
@@ -895,28 +967,42 @@ export class GameFramework {
     if (this.gameState.status === 'finished') return;
     if (this.isOnline) {
        if (this.mySlotIndex !== this.gameState.activeSlotIndex) {
-          const expected = this.slots[this.gameState.activeSlotIndex].name;
+          const expected = this.gameState.slots[this.gameState.activeSlotIndex].name;
           if (window.Notify) window.Notify.toast(`It's not your turn! Waiting for ${expected}.`);
           return;
        }
     }
     const newState = this.engine.applyMove(this.gameState, action, this.gameState.activeSlotIndex);
     if (!newState) return;
-    const gameOver = this.engine.checkGameOver(newState, this.gameState.activeSlotIndex);
+
+    // Capture modular context from engine
+    if (newState.statusText) this.gameState.statusText = newState.statusText;
+    if (newState.blockerTitle) this.gameState.blockerTitle = newState.blockerTitle;
+
+    const gameOver = this.engine.checkGameOver(newState, this.gameState.activeSlotIndex, this.mySlotIndex, this.isOnline);
     if (gameOver) {
        newState.status = 'finished';
        newState.winner = gameOver.winner;
        newState.winningLine = gameOver.winningLine;
+       newState.gameOverTitle = gameOver.title;
+       newState.gameOverSubtitle = gameOver.subtitle;
+       newState.glowColor = gameOver.glowColor;
     } else {
-       // Standard turn switching
-       newState.activeSlotIndex = (this.gameState.activeSlotIndex + 1) % this.gameState.slots.length;
+        // The engine is now responsible for updating activeSlotIndex.
+        // We just check if it changed to trigger Pass the Phone.
 
        const oldSlot = this.gameState.activeSlotIndex;
        const newSlot = newState.activeSlotIndex;
        
-       if (!this.isOnline && this.passThePhone && newSlot !== oldSlot) {
-          const nextName = this.slots[newSlot].name;
+       if (!this.isOnline && this.passThePhone && newSlot !== oldSlot && newSlot !== null) {
+          const nextName = this.gameState.slots[newSlot].name;
           document.getElementById('fw-next-player-name').innerText = nextName;
+          
+          // Modular Blocker Title
+          const passTitleEl = document.getElementById('fw-pass-title');
+          if (passTitleEl) {
+             passTitleEl.innerText = newState.blockerTitle || "PASS DEVICE";
+          }
           
           // Populate generic context info
           const contextEl = document.getElementById('fw-pass-context');
@@ -953,8 +1039,9 @@ export class GameFramework {
     }
   }
 
-  resetLocalGame() {
-    this.gameState = this.engine.getInitialState();
+  resetLocalGame(newConfig = null) {
+    const config = newConfig || (this.gameState && this.gameState.config) || {};
+    this.gameState = this.engine.getInitialState(config);
     this.gameState.status = this.hasLobby ? 'waiting' : 'playing';
     this.gameState.started = !this.hasLobby; // Skip lobby if game doesn't need it
     this.gameState.teams = {};
@@ -989,6 +1076,7 @@ export class GameFramework {
        }
     }
     
+
     this.gameState.slots = initialSlots;
 
     // 2. Local-only: Populate a fixed guest pool if no lobby exists
@@ -1002,14 +1090,15 @@ export class GameFramework {
        }
     }
 
-    // 3. Auto-Assign available players randomized
+    // 3. Auto-Assign available players (Don't shuffle on local reset to keep player 1 in slot 0)
     const playersToAssign = this.isOnline 
        ? (window.currentLobbyData?.players || []) 
        : this.localLobbyPlayers;
        
-    this.autoAssignPlayers(this.gameState, playersToAssign);
-
-    this.gameState.activeSlotIndex = 0;
+    this.autoAssignPlayers(this.gameState, playersToAssign, false);
+    
+    // Note: We deliberately DO NOT force activeSlotIndex = 0 here anymore.
+    // We let the engine's getInitialState value stand (e.g. null for Codenames).
     
     if (this.dom.gameOverOverlay) this.dom.gameOverOverlay.classList.remove('visible');
     this.gameOverDismissed = false;
@@ -1018,8 +1107,9 @@ export class GameFramework {
     if (this.ui && this.ui.render) this.ui.render(this.gameState, this);
   }
 
-  resetOnlineGame() {
-    const newState = this.engine.getInitialState();
+  resetOnlineGame(newConfig = null) {
+    const config = newConfig || (this.gameState && this.gameState.config) || {};
+    const newState = this.engine.getInitialState(config);
     newState.slots = this.gameState.slots; 
     newState.teams = this.gameState.teams; 
     newState.status = 'playing';
@@ -1343,12 +1433,19 @@ export class GameFramework {
              this.dom.turnIndicator.style.webkitTextFillColor = 'transparent';
              this.dom.turnIndicator.innerText = "It's a Draw!";
              this.showGameOver('draw');
-          } else if (this.gameState.winner === 'defeat') {
+          } else if (this.gameState.winner === 'victory') {
              this.dom.turnIndicator.classList.add('text-gradient');
              this.dom.turnIndicator.style.webkitTextFillColor = 'transparent';
-             this.dom.turnIndicator.innerText = "Mission Failed! ❌";
-             this.showGameOver('defeat');
+             this.dom.turnIndicator.innerText = "VICTORY!";
+             this.showGameOver('victory');
+          } else if (this.gameState.winner === 'defeat' || typeof this.gameState.winner === 'string') {
+             // Handle 'defeat' or any custom string outcomes like 'assassin' or 'timeout'
+             this.dom.turnIndicator.classList.add('text-gradient');
+             this.dom.turnIndicator.style.webkitTextFillColor = 'transparent';
+             this.dom.turnIndicator.innerText = this.gameState.statusText || "Mission Failed! ❌";
+             this.showGameOver(this.gameState.winner);
           } else {
+             // Fallback for numeric indices (the winner[s] of competitive games)
              const winners = Array.isArray(this.gameState.winner) ? this.gameState.winner : [this.gameState.winner];
              const winnerColor = this.getSlotColor(winners[0]);
              
@@ -1358,7 +1455,7 @@ export class GameFramework {
              if (winners.length === 1 && winners[0] === this.mySlotIndex) {
                  this.dom.turnIndicator.innerHTML = `<span style="color: ${winnerColor}; font-weight: 800;">YOU WIN!</span>`;
              } else {
-                 const winnerNames = winners.map(idx => this.gameState.slots[idx].name).join(' & ');
+                 const winnerNames = winners.map(idx => this.gameState.slots[idx]?.name || "Winner").join(' & ');
                  this.dom.turnIndicator.innerHTML = `<span style="color: ${winnerColor}; font-weight: 800;">${winnerNames}</span> Wins!`;
              }
              this.showGameOver(winners[0]); 
@@ -1368,6 +1465,11 @@ export class GameFramework {
           if (this.dom.resetBtn) {
              this.dom.resetBtn.disabled = this.isOnline && !this.isHost();
              this.dom.resetBtn.onclick = () => this.isOnline ? (this.isHost() && this.resetOnlineGame()) : this.resetLocalGame();
+          }
+
+          if (this.gameState.activeSlotIndex === null) {
+             this.dom.turnIndicator.classList.add('hidden');
+             return;
           }
 
           const activeSlot = this.gameState.slots[this.gameState.activeSlotIndex];
@@ -1387,7 +1489,12 @@ export class GameFramework {
           
           this.dom.turnIndicator.classList.remove('text-gradient');
           this.dom.turnIndicator.style.webkitTextFillColor = 'initial'; // Override transparent
-          this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${nameToDisplay} TURN${symbolSuffix}</span>`;
+          
+          if (this.gameState.statusText) {
+             this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${this.gameState.statusText.toUpperCase()}</span>`;
+          } else {
+             this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${nameToDisplay} TURN${symbolSuffix}</span>`;
+          }
           
           if (this.dom.gameOverOverlay) {
              this.dom.gameOverOverlay.classList.remove('visible');
@@ -1418,9 +1525,11 @@ export class GameFramework {
 
     // 3. Game Settings: Host-only online, clickable if engine supports
     if (this.dom.settingsBtn) {
+       const hasSettings = this.engine && (this.engine.hasSettings || this.engine.getSettingsHTML);
        const shouldShow = !isOnline || isHost;
        this.dom.settingsBtn.style.display = shouldShow ? 'flex' : 'none';
        this.dom.settingsBtn.disabled = !hasSettings;
+       this.dom.settingsBtn.onclick = hasSettings ? () => this.openSettingsModal() : null;
     }
 
     // 4. Reset: Host-only online, always shown
@@ -1436,46 +1545,69 @@ export class GameFramework {
     const title = document.getElementById('fw-gameover-title');
     const subtitle = document.getElementById('fw-winner-name');
     const glow = document.getElementById('fw-glow');
-    
+
+    const colors = GameFramework.COLORS;
+    let colorMeta = colors[0];
+
     if (winnerIndex === 'draw') {
-       title.innerText = "IT'S A DRAW";
-       subtitle.innerText = "A perfectly balanced match! 🤝";
+       title.innerText = this.gameState.gameOverTitle || "IT'S A DRAW";
+       subtitle.innerText = this.gameState.gameOverSubtitle || "A perfectly balanced match! 🤝";
        glow.style.background = `radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)`;
-    } else if (winnerIndex === 'defeat') {
-       title.innerText = "DEFEAT";
-       subtitle.innerText = "The mission was compromised. 💀";
+    } else if (winnerIndex === 'defeat' || winnerIndex === 'victory') {
+       // Cooperative / Named Global States
+       const isWin = winnerIndex === 'victory';
+       title.innerText = this.gameState.gameOverTitle || (isWin ? "VICTORY" : "DEFEAT");
+       subtitle.innerText = this.gameState.gameOverSubtitle || (isWin ? "Victory" : "Defeat");
+       
+       const glowCol = isWin ? "rgba(16, 185, 129, 0.1)" : "rgba(255, 107, 107, 0.1)";
+       glow.style.background = `radial-gradient(circle, ${glowCol} 0%, transparent 70%)`;
+    } else if (typeof winnerIndex === 'string') {
+       // Catch-all for other named outcomes like 'assassin', 'timeout'
+       title.innerText = this.gameState.gameOverTitle || "DEFEAT";
+       subtitle.innerText = this.gameState.gameOverSubtitle || "Defeat";
        glow.style.background = `radial-gradient(circle, rgba(255, 107, 107, 0.1) 0%, transparent 70%)`;
     } else {
-       const winnerName = this.gameState.slots[winnerIndex].name;
+       // Competitive / Personal Indices
        const slotData = this.gameState.slots[winnerIndex];
+       if (!slotData) {
+          title.innerText = this.gameState.gameOverTitle || "GAME OVER";
+          subtitle.innerText = this.gameState.gameOverSubtitle || "The match has concluded.";
+          return;
+       }
+
+       const winnerName = slotData.name;
        
        // Determine personalization
        const isMyWin = (this.mySlotIndex === winnerIndex) || 
-                       (this.mySlotIndex !== null && this.gameState.slots[this.mySlotIndex].team && this.gameState.slots[this.mySlotIndex].team === slotData.team);
+                       (this.mySlotIndex !== null && this.gameState.slots[this.mySlotIndex]?.team === slotData.team);
 
-       if (this.mySlotIndex === null) {
-          title.innerText = "GAME OVER";
-       } else {
-          title.innerText = isMyWin ? "VICTORY" : "DEFEAT";
-       }
+       title.innerText = this.gameState.gameOverTitle || (isMyWin ? "VICTORY" : "DEFEAT");
 
        const teamKey = slotData.team || '_default';
        const teamState = (this.gameState.teams && this.gameState.teams[teamKey]) || { name: 'Players', color: 'Neutral' };
-       const colors = GameFramework.COLORS;
-       const colorMeta = colors.find(c => c.name === teamState.color) || colors[0];
+       colorMeta = colors.find(c => c.name === teamState.color) || colors[0];
 
-       if (this.mySlotIndex === winnerIndex) {
-         subtitle.innerHTML = `You won the match! 🏆`;
+       if (this.gameState.gameOverSubtitle) {
+          subtitle.innerHTML = this.gameState.gameOverSubtitle;
+       } else if (this.mySlotIndex === winnerIndex) {
+          subtitle.innerHTML = `You won the match! 🏆`;
        } else {
-         subtitle.innerHTML = `<span style="color: ${colorMeta.value}; font-weight: 800;">${winnerName}</span> wins the match!`;
+          subtitle.innerHTML = `<span style="color: ${colorMeta.value}; font-weight: 800;">${winnerName}</span> wins the match!`;
        }
-
        glow.style.background = `radial-gradient(circle, ${colorMeta.value}26 0%, transparent 70%)`;
-       
-       const isAlreadyShowing = this.dom.gameOverOverlay.classList.contains('visible');
-       if (!isAlreadyShowing && (isMyWin || this.mySlotIndex === null)) {
-         this.triggerConfetti(colorMeta.value);
-       }
+    }
+
+    // Final glow override if engine provided a specific color
+    if (this.gameState.glowColor) {
+       glow.style.background = `radial-gradient(circle, ${this.gameState.glowColor}44 0%, transparent 70%)`;
+    }
+
+    const isMyWin = (winnerIndex === 'victory') || (this.mySlotIndex === winnerIndex) || 
+                    (this.mySlotIndex !== null && this.gameState.slots[this.mySlotIndex].team && this.gameState.slots[this.mySlotIndex].team === (this.gameState.slots[winnerIndex]?.team));
+
+    const isAlreadyShowing = this.dom.gameOverOverlay.classList.contains('visible');
+    if (!isAlreadyShowing && (isMyWin || this.mySlotIndex === null)) {
+       this.triggerConfetti(colorMeta.value);
     }
     
     const isHost = this.isHost();
