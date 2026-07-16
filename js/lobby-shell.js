@@ -1,5 +1,6 @@
 /* js/lobby-shell.js */
-import { subscribeToLobby, leaveLobby, deleteLobby, setLobbyGame, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote, touchLobby, getAllLobbies } from './database-manager.js';
+import { subscribeToLobby, leaveLobby, deleteLobby, setLobbyGame, changeHost, broadcastMessage, updatePlayerProfile, updateLobbySettings, setVote, touchLobby, getAllLobbies } from './database-manager.js';
+import { ProfileManager } from './profile-manager.js';
 
 // Client Session ID (shared across all pages via localStorage)
 let CLIENT_ID = localStorage.getItem('gh_clientId');
@@ -30,14 +31,26 @@ initLobbyShell();
 
 function initLobbyShell() {
   injectSidebarHTML();
+  injectGlobalProfile();
   bindDOM();
   setupListeners();
+  
+  // Initialize Global Profile Logic
+  const isHub = !window.location.pathname.includes('/games/');
+  const pm = new ProfileManager(isHub);
+  window.profileManager = pm;
+  pm.init();
   
   // Make Hub/Logo links lobby-aware
   makeLinksLobbyAware();
 
-  // Start Garbage Collector (Lobby Cleanup)
-  startGarbageCollector();
+  // Start Garbage Collector (Lobby Cleanup) - Skip in local mode
+  const mode = urlParams.get('mode');
+  const isLocal = mode === 'local';
+
+  if (!isLocal) {
+    startGarbageCollector();
+  }
 
   if (LOBBY_ID) {
     // Start Heartbeat for THIS lobby
@@ -86,15 +99,15 @@ function injectSidebarHTML() {
     <input type="checkbox" id="online-toggle" class="online-toggle-checkbox hidden" style="display:none;">
     <label for="online-toggle" class="online-drawer-toggle">
       <span style="font-size: 1.2rem;">🌐</span>
-      <span id="drawer-label-text" class="drawer-label-text">Lobby</span>
+      <span id="drawer-label-text" class="drawer-label-text">Online</span>
     </label>
-    <div class="online-drawer">
-       <h2 class="text-gradient" style="font-size: 1.8rem; margin-bottom: 0.5rem;">Online Lobby</h2>
-       <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4;">Gather your friends in a lobby room before selecting a game to play together.</p>
-       <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
+    <div class="online-drawer" style="overflow: hidden;">
+       <h2 class="text-gradient" style="font-size: 1.8rem; margin-bottom: 0.5rem; flex-shrink: 0;">Online Lobby</h2>
+       <p style="color: var(--text-secondary); font-size: 0.8rem; line-height: 1.4; flex-shrink: 0;">Gather your friends in a lobby room before selecting a game to play together.</p>
+       <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0; flex-shrink: 0;">
        
        <!-- UNCONNECTED UI -->
-       <div id="lobby-unconnected-ui" class="hidden">
+       <div id="lobby-unconnected-ui" class="hidden" style="overflow-y: auto; overflow-x: hidden; flex: 1;">
           <button id="hub-btn-open-create" class="btn btn-coral w-100">Create New Lobby</button>
           
           <div id="create-lobby-form" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
@@ -115,22 +128,24 @@ function injectSidebarHTML() {
             <div id="lobby-divider-or" class="divider mt-2 mb-2" style="width: 100%; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); line-height: 0.1em; margin: 15px 0 20px;">
                <span style="background: var(--bg-card); padding: 0 10px; color: var(--text-secondary); font-size: 0.8rem;">OR</span>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="text" id="hub-input-lobby" placeholder="CODE" maxlength="4" style="flex: 1; padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-primary); color: white; text-transform: uppercase; font-weight: bold; text-align: center; letter-spacing: 2px;">
-              <button id="hub-btn-join-lobby" class="btn btn-mint">Join</button>
+            <div style="display: flex; gap: 0.5rem; width: 100%; box-sizing: border-box;">
+              <input type="text" id="hub-input-lobby" placeholder="CODE" maxlength="4" style="flex: 1; min-width: 0; padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-primary); color: white; text-transform: uppercase; font-weight: bold; text-align: center; letter-spacing: 2px; outline: none;">
+              <button id="hub-btn-join-lobby" class="btn btn-mint" style="flex-shrink: 0; white-space: nowrap;">Join</button>
             </div>
           </div>
        </div>
 
        <!-- CONNECTED UI -->
-       <div id="lobby-connected-ui" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; overflow-y: auto;">
-          <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center; position: relative;">
+       <div id="lobby-connected-ui" class="hidden" style="display: flex; flex-direction: column; gap: 1rem; flex: 1; min-height: 0; overflow-y: hidden; overflow-x: hidden;">
+          <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; text-align: center; position: relative; flex-shrink: 0;">
              <span id="display-lobby-name" style="color: white; font-weight:bold; font-size: 1.1rem; display:block;">My Lobby</span>
-             <button id="hub-btn-edit-lobby" class="btn hidden" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px;" title="Edit Settings">⚙️</button>
-             <span style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; margin-top:5px; display:block;">Code: <span id="current-lobby-code" class="text-gradient" style="font-weight: 900; letter-spacing: 2px;">${LOBBY_ID || ''}</span></span>
+             <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 5px;">
+                <span style="color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">Code: <span id="current-lobby-code" class="text-gradient" style="font-weight: 900; letter-spacing: 2px;">${LOBBY_ID || ''}</span></span>
+                <button id="hub-btn-copy-code" class="btn" style="background: rgba(255,255,255,0.1); border: none; font-size: 0.8rem; cursor: pointer; padding: 2px 6px; border-radius: 4px; color: white;" title="Copy Code">📋</button>
+             </div>
           </div>
           
-          <div id="host-edit-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+          <div id="host-edit-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex-shrink: 0;">
              <label style="font-size: 0.8rem; color: var(--text-secondary); display:block; margin-bottom:4px;">Edit Name</label>
              <input type="text" id="edit-lobby-name" class="w-100" style="padding: 0.5rem; border-radius: 6px; background: var(--bg-primary); color: white; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 0.75rem;" maxlength="20">
              
@@ -140,20 +155,22 @@ function injectSidebarHTML() {
              </label>
              <input type="range" id="edit-max-players-range" min="2" max="10" value="4" step="1" class="w-100" style="margin-bottom: 1rem; accent-color: var(--accent-coral);">
              
-             <label style="font-size: 0.8rem; color: var(--text-secondary); display:flex; align-items:center; gap: 0.5rem; margin-bottom:1rem; cursor:pointer;">
-               <input type="checkbox" id="edit-lobby-locked" style="accent-color: var(--accent-coral); transform: scale(1.2);"> Lock Lobby
-             </label>
-             
              <button id="hub-btn-save-edit" class="btn btn-mint w-100">Save Changes</button>
              <button id="hub-btn-cancel-edit" class="btn btn-secondary w-100 mt-1" style="font-size: 0.8rem; padding: 0.4rem;">Cancel</button>
           </div>
 
-          <div>
-             <h3 id="display-player-count" style="font-size: 0.9rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Players</h3>
-             <ul id="lobby-player-list" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem;"></ul>
+          <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+             <h3 style="font-size: 0.9rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 0.5rem; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+                <span id="display-player-count">Players</span>
+                <div id="host-quick-actions" class="hidden" style="display: flex; gap: 0.5rem;">
+                   <button id="hub-btn-toggle-lock" class="btn" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px;" title="Toggle Lock">🔓</button>
+                   <button id="hub-btn-edit-lobby" class="btn" style="background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 2px;" title="Edit Settings">⚙️</button>
+                </div>
+             </h3>
+             <ul id="lobby-player-list" style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; flex: 1;"></ul>
           </div>
 
-          <div id="host-messaging-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px;">
+          <div id="host-messaging-panel" class="hidden mt-1" style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex-shrink: 0;">
              <label style="font-size: 0.8rem; color: var(--accent-coral); display:block; margin-bottom:4px; font-weight:bold;">Host Broadcast</label>
              <div style="display: flex; gap: 0.5rem;">
                <input type="text" id="hub-input-host-msg" placeholder="Message..." style="flex: 1; padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: var(--bg-primary); color: white; width: 50%;">
@@ -161,8 +178,10 @@ function injectSidebarHTML() {
              </div>
           </div>
 
-          <button id="hub-btn-leave-lobby" class="btn btn-secondary w-100" style="margin-top: auto;">Leave Lobby</button>
-          <button id="hub-btn-delete-lobby" class="btn btn-coral w-100 hidden" style="margin-top: auto;">Delete Lobby</button>
+          <div style="flex-shrink: 0; margin-top: auto;">
+             <button id="hub-btn-leave-lobby" class="btn btn-secondary w-100">Leave Lobby</button>
+             <button id="hub-btn-delete-lobby" class="btn btn-coral w-100 hidden">Delete Lobby</button>
+          </div>
        </div>
     </div>
   `;
@@ -177,13 +196,15 @@ function bindDOM() {
     drawerLabelText: document.getElementById('drawer-label-text'),
     lobbyName: document.getElementById('display-lobby-name'),
     playerCount: document.getElementById('display-player-count'),
+    btnCopyCode: document.getElementById('hub-btn-copy-code'),
     playerList: document.getElementById('lobby-player-list'),
     editToggle: document.getElementById('hub-btn-edit-lobby'),
+    btnLock: document.getElementById('hub-btn-toggle-lock'),
+    hostActions: document.getElementById('host-quick-actions'),
     editPanel: document.getElementById('host-edit-panel'),
     inputEditName: document.getElementById('edit-lobby-name'),
     sliderEditMax: document.getElementById('edit-max-players-range'),
     displayEditMaxVal: document.getElementById('edit-max-players-val'),
-    checkEditLocked: document.getElementById('edit-lobby-locked'),
     btnSaveEdit: document.getElementById('hub-btn-save-edit'),
     btnCancelEdit: document.getElementById('hub-btn-cancel-edit'),
     msgPanel: document.getElementById('host-messaging-panel'),
@@ -195,13 +216,30 @@ function bindDOM() {
 }
 
 function setupListeners() {
+  if (dom.btnCopyCode) {
+    dom.btnCopyCode.addEventListener('click', () => {
+      if (!LOBBY_ID) return;
+      navigator.clipboard.writeText(LOBBY_ID).then(() => {
+        if (window.Notify) window.Notify.toast("Lobby code copied to clipboard!", 3000);
+      });
+    });
+  }
+
   if (dom.editToggle) {
     dom.editToggle.addEventListener('click', () => {
-      dom.editPanel.classList.remove('hidden');
+      dom.editPanel.classList.toggle('hidden');
       dom.inputEditName.value = window.currentLobbyData.name;
       dom.sliderEditMax.value = window.currentLobbyData.maxPlayers;
       dom.displayEditMaxVal.innerText = window.currentLobbyData.maxPlayers;
-      dom.checkEditLocked.checked = !!window.currentLobbyData.isLocked;
+    });
+  }
+
+  if (dom.btnLock) {
+    dom.btnLock.addEventListener('click', async () => {
+       const isLocked = !!window.currentLobbyData.isLocked;
+       await updateLobbySettings(LOBBY_ID, {
+          isLocked: !isLocked
+       });
     });
   }
 
@@ -220,8 +258,7 @@ function setupListeners() {
       }
       await updateLobbySettings(LOBBY_ID, {
         name: dom.inputEditName.value.trim() || 'My Lobby',
-        maxPlayers: newMax,
-        isLocked: dom.checkEditLocked.checked
+        maxPlayers: newMax
       });
       dom.editPanel.classList.add('hidden');
     });
@@ -247,7 +284,8 @@ function setupListeners() {
         }
 
         const uName = localStorage.getItem('gh_username') || 'Guest';
-        await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName });
+        const uIcon = localStorage.getItem('gh_usericon') || '👤';
+        await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName, icon: uIcon });
         handleLobbyClosure(null); // Silent exit
     });
   }
@@ -374,7 +412,8 @@ function makeLinksLobbyAware() {
             confirmText: "Leave",
             onConfirm: async () => {
               const uName = localStorage.getItem('gh_username') || 'Guest';
-              await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName });
+              const uIcon = localStorage.getItem('gh_usericon') || '👤';
+              await leaveLobby(LOBBY_ID, { id: CLIENT_ID, name: uName, icon: uIcon });
               window.location.href = targetUrl;
             }
           });
@@ -424,8 +463,7 @@ async function startGarbageCollector() {
     } catch(e) { /* ignore */ }
   };
 
-  // Run once on load, then every 5 mins
-  performCleanup();
+  // Run every 5 mins (Removed eager load-time call to keep local mode silent)
   setInterval(performCleanup, 5 * 60 * 1000);
 }
 
@@ -469,7 +507,7 @@ function handleGlobalRedirection(data) {
 function renderUnconnectedUI() {
   if (dom.viewConnected) dom.viewConnected.classList.add('hidden');
   if (dom.viewUnconnected) dom.viewUnconnected.classList.remove('hidden');
-  if (dom.drawerLabelText) dom.drawerLabelText.innerText = "LOBBY";
+  if (dom.drawerLabelText) dom.drawerLabelText.innerText = "ONLINE";
 }
 
 function renderUI(data) {
@@ -486,20 +524,25 @@ function renderUI(data) {
   
   const cap = data.maxPlayers || '?';
   const cur = data.players ? data.players.length : 0;
-  dom.playerCount.innerText = `Players (${cur}/${cap})${data.isLocked ? ' 🔒' : ''}`;
+  dom.playerCount.innerText = `Players (${cur}/${cap})`;
 
   // Host Privilege UI
   dom.btnDelete.classList.toggle('hidden', !isHost);
   dom.btnLeave.classList.toggle('hidden', isHost);
   dom.msgPanel.classList.toggle('hidden', !isHost);
-  dom.editToggle.classList.toggle('hidden', !isHost);
+  dom.hostActions.classList.toggle('hidden', !isHost);
+
+  // Update Lock Icon
+  if (dom.btnLock) {
+    dom.btnLock.innerText = data.isLocked ? "🔒" : "🔓";
+    dom.btnLock.title = data.isLocked ? "Unlock Lobby" : "Lock Lobby";
+  }
 
   // Player List
   dom.playerList.innerHTML = '';
   data.players.forEach(p => {
     const li = document.createElement('li');
-    li.style = "padding: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; background: " + (p.id === data.hostId ? "rgba(59, 130, 246, 0.1)" : "rgba(255, 255, 255, 0.05)");
-    if (p.id === data.hostId) li.style.borderLeft = "3px solid #3b82f6";
+    li.style = "padding: 0.5rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05);";
     
     let controls = null;
     if (isHost && p.id !== CLIENT_ID) {
@@ -525,11 +568,91 @@ function renderUI(data) {
        controls = controlsDiv;
     }
 
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = "mini-avatar";
+    avatarDiv.innerText = p.icon || "👤";
+    avatarDiv.style.backgroundColor = p.color || "var(--bg-card)";
+    avatarDiv.style.width = "24px";
+    avatarDiv.style.height = "24px";
+    avatarDiv.style.borderRadius = "50%";
+    avatarDiv.style.display = "flex";
+    avatarDiv.style.alignItems = "center";
+    avatarDiv.style.justifyContent = "center";
+    avatarDiv.style.fontSize = "0.9rem";
+    avatarDiv.style.flexShrink = "0";
+
+    // Host Badge
+    if (p.id === data.hostId) {
+      const badge = document.createElement('div');
+      badge.className = "mini-avatar-badge";
+      badge.innerText = "👑";
+      avatarDiv.appendChild(badge);
+    }
+    
     const nameSpan = document.createElement('span');
-    nameSpan.innerText = (p.id === data.hostId ? "👑 " : "👤 ") + p.name;
-    li.prepend(nameSpan);
+    nameSpan.innerText = p.name;
+    nameSpan.style.marginLeft = "8px";
+    if (p.id === data.hostId) {
+      nameSpan.style.color = "var(--accent-gold, #fbbf24)";
+      nameSpan.style.fontWeight = "bold";
+    }
+    
+    const wrapper = document.createElement('div');
+    wrapper.style = "display: flex; align-items: center;";
+    wrapper.appendChild(avatarDiv);
+    wrapper.appendChild(nameSpan);
+    
+    li.prepend(wrapper);
     if (controls) li.appendChild(controls);
     
     dom.playerList.appendChild(li);
   });
+}
+function injectGlobalProfile() {
+  // 1. Inject Header Profile Button if missing
+  // We look for .nav-right (game headers) or .header-right (hub header)
+  let target = document.querySelector('.nav-right') || document.querySelector('.header-right');
+  
+  if (target && !document.getElementById('profile-btn')) {
+    const profileBtnHTML = `
+      <div id="profile-btn" class="header-user">
+        <div id="header-avatar" class="user-avatar">👤</div>
+        <span id="display-username" class="username">Guest</span>
+      </div>
+    `;
+    target.innerHTML = profileBtnHTML + target.innerHTML;
+  }
+
+  // 2. Inject Profile Modal if missing
+  if (!document.getElementById('profile-modal')) {
+    const modalHTML = `
+      <div id="profile-modal" class="modal hidden">
+        <div class="modal-content">
+          <h2>Edit User Profile</h2>
+          <button class="btn-close" id="btn-close-profile">&times;</button>
+          
+          <div class="modal-actions mt-2" style="align-items: stretch;">
+            <div class="profile-header-row">
+               <div class="avatar-preview-wrapper" style="cursor: default;">
+                  <div id="modal-avatar-preview" class="user-avatar-large">👤</div>
+               </div>
+               
+               <div class="profile-info-column" style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; justify-content: center;">
+                  <label style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Username</label>
+                  <input type="text" id="input-username" placeholder="Enter your username" maxlength="15" class="w-100" style="padding: 0.8rem; font-size: 1.1rem;">
+               </div>
+            </div>
+
+            <div id="avatar-customizer" class="customizer-panel">
+              <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Select Icon</label>
+              <div id="icon-selector" class="icon-grid"></div>
+            </div>
+
+            <button id="btn-save-profile" class="btn btn-mint mt-2 w-100" style="padding: 1rem; font-weight: bold; font-size: 1rem;">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+  }
 }

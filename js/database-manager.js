@@ -1,6 +1,5 @@
-/* js/database-manager.js */
 import { 
-  db, 
+  getDB, 
   doc, 
   setDoc, 
   getDoc, 
@@ -22,7 +21,7 @@ export async function touchLobby(lobbyId, updates = {}) {
   console.log(`[Database] touchLobby ATTEMPT path="lobbies/${lobbyId}" (ID length: ${lobbyId?.length})`, updates);
   
   try {
-    const docRef = doc(db, "lobbies", lobbyId);
+    const docRef = doc(getDB(), "lobbies", lobbyId);
     console.log(`[Database] docRef path resolved to:`, docRef.path);
     await setDoc(docRef, updates, { merge: true });
     console.log(`[Database] touchLobby SUCCESS for ${lobbyId}`);
@@ -46,11 +45,11 @@ export function generateLobbyId() {
  */
 export async function createUniversalLobby(hostConfig) {
   const lobbyId = generateLobbyId();
-  await setDoc(doc(db, "lobbies", lobbyId), {
+  await setDoc(doc(getDB(), "lobbies", lobbyId), {
     name: hostConfig.name,
     hostId: hostConfig.hostId,
     maxPlayers: hostConfig.maxPlayers,
-    players: [{ id: hostConfig.hostId, name: hostConfig.hostPlayerName }],
+    players: [{ id: hostConfig.hostId, name: hostConfig.hostPlayerName, icon: hostConfig.hostIcon || '👤', color: hostConfig.hostColor || '#252525' }],
     currentGame: "STAGING",
     gameState: {},
     votes: {},
@@ -66,7 +65,7 @@ export async function createUniversalLobby(hostConfig) {
  * Authenticates and connects a player into a lobby
  */
 export async function joinLobby(lobbyId, playerObj) {
-  const lobbyRef = doc(db, "lobbies", lobbyId);
+  const lobbyRef = doc(getDB(), "lobbies", lobbyId);
   const snap = await getDoc(lobbyRef);
   
   if (!snap.exists()) throw new Error("Lobby not found");
@@ -91,7 +90,7 @@ export async function joinLobby(lobbyId, playerObj) {
  * Removes a player and cleans up their votes
  */
 export async function leaveLobby(lobbyId, playerObj) {
-  const lobbyRef = doc(db, "lobbies", lobbyId);
+  const lobbyRef = doc(getDB(), "lobbies", lobbyId);
   const snap = await getDoc(lobbyRef);
   if (!snap.exists()) return;
   
@@ -114,7 +113,7 @@ export async function leaveLobby(lobbyId, playerObj) {
  * Used strictly by the Host to violently destroy the document
  */
 export async function deleteLobby(lobbyId) {
-  await deleteDoc(doc(db, "lobbies", lobbyId));
+  await deleteDoc(doc(getDB(), "lobbies", lobbyId));
 }
 
 /**
@@ -175,7 +174,7 @@ export async function updateLobbySettings(lobbyId, settings) {
  * Any client sets their single game vote
  */
 export async function setVote(lobbyId, gameId, playerId) {
-  const lobbyRef = doc(db, "lobbies", lobbyId);
+  const lobbyRef = doc(getDB(), "lobbies", lobbyId);
   const snap = await getDoc(lobbyRef);
   if (!snap.exists()) return;
   const data = snap.data();
@@ -196,10 +195,10 @@ export async function setVote(lobbyId, gameId, playerId) {
 }
 
 /**
- * Updates a player's display name if they edit their profile
+ * Updates a player's profile (name & icon) if they edit their profile
  */
-export async function updatePlayerName(lobbyId, playerId, newName) {
-  const lobbyRef = doc(db, "lobbies", lobbyId);
+export async function updatePlayerProfile(lobbyId, playerId, profileData) {
+  const lobbyRef = doc(getDB(), "lobbies", lobbyId);
   const snap = await getDoc(lobbyRef);
   if (!snap.exists()) return;
   
@@ -208,7 +207,8 @@ export async function updatePlayerName(lobbyId, playerId, newName) {
   const newPlayers = data.players.map(p => {
      if (p.id === playerId) {
         changed = true;
-        return { ...p, name: newName };
+        // Merge name and icon
+        return { ...p, ...profileData };
      }
      return p;
   });
@@ -223,7 +223,7 @@ export async function updatePlayerName(lobbyId, playerId, newName) {
  * Use this for simple bulk overwrites.
  */
 export async function updateGameState(lobbyId, newState) {
-  await setDoc(doc(db, "lobbies", lobbyId), {
+  await setDoc(doc(getDB(), "lobbies", lobbyId), {
     gameState: newState
   }, { merge: true });
 }
@@ -234,7 +234,7 @@ export async function updateGameState(lobbyId, newState) {
  * Use this for "History" models or atomic updates.
  */
 export async function patchGameState(lobbyId, updates) {
-  const lobbyRef = doc(db, "lobbies", lobbyId);
+  const lobbyRef = doc(getDB(), "lobbies", lobbyId);
   // Ensure updates are targeted at the gameState field
   const finalUpdates = {};
   for (const key in updates) {
@@ -252,7 +252,7 @@ export async function patchGameState(lobbyId, updates) {
  * @returns {function} unsubscribe hook
  */
 export function subscribeToLobby(lobbyId, callback) {
-  return onSnapshot(doc(db, "lobbies", lobbyId), (docSnap) => {
+  return onSnapshot(doc(getDB(), "lobbies", lobbyId), (docSnap) => {
     callback(docSnap.exists() ? docSnap.data() : null);
   });
 }
@@ -261,7 +261,7 @@ export function subscribeToLobby(lobbyId, callback) {
  * Fetches all active lobbies for garbage collection or listing
  */
 export async function getAllLobbies() {
-  const lobbiesCol = collection(db, "lobbies");
+  const lobbiesCol = collection(getDB(), "lobbies");
   const snap = await getDocs(lobbiesCol);
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }

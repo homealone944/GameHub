@@ -25,16 +25,25 @@ const firebaseConfig = {
   appId: "1:746688870410:web:d444ecb7d20680146907f3"
 };
 
-// Initialize Firebase with stable connection settings
-const app = initializeApp(firebaseConfig);
-const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  useFetchStreams: false
-});
+// Initialize Firebase lazily only when requested
+let app = null;
+let db = null;
 
-// Export instances and primitives for the Database Manager
+function getDB() {
+  if (!db) {
+     console.log("[Firebase] Lazy Initializing SDK...");
+     app = initializeApp(firebaseConfig);
+     db = initializeFirestore(app, {
+       experimentalForceLongPolling: true,
+       useFetchStreams: false
+     });
+  }
+  return db;
+}
+
+// Export initialization helper and primitives
 export { 
-  db, 
+  getDB, 
   doc, 
   setDoc, 
   getDoc, 

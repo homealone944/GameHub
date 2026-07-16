@@ -1,5 +1,5 @@
 /* js/hub.js */
-import { createUniversalLobby, joinLobby, leaveLobby, deleteLobby, setLobbyGame, subscribeToLobby, changeHost, broadcastMessage, updatePlayerName, updateLobbySettings, setVote } from './database-manager.js';
+import { createUniversalLobby, joinLobby, leaveLobby, deleteLobby, setLobbyGame, subscribeToLobby, changeHost, broadcastMessage, updatePlayerProfile, updateLobbySettings, setVote } from './database-manager.js';
 import { GAMES_CATALOG } from './catalog.js';
 import { generateRandomName } from './names.js';
 
@@ -107,16 +107,23 @@ function setupLobbyBindings() {
    }
 
    btnConfirmCreate.addEventListener('click', async () => {
-     const name = inputLobbyName.value.trim() || 'My Party';
+     const lobbyName = inputLobbyName.value.trim() || 'My Party';
      const maxP = parseInt(sliderMaxPlayers.value) || 4;
-     const uName = localStorage.getItem('gh_username') || 'Guest';
+     
+     const profile = window.profileManager ? window.profileManager.getProfile() : { 
+       name: localStorage.getItem('gh_username') || generateRandomName(),
+       icon: localStorage.getItem('gh_usericon') || '👤',
+       color: '#252525'
+     };
      
      btnConfirmCreate.innerText = 'Creating...';
      try {
        const lid = await createUniversalLobby({
-         name: name,
+         name: lobbyName,
          hostId: CLIENT_ID,
-         hostPlayerName: uName,
+         hostPlayerName: profile.name,
+         hostIcon: profile.icon,
+         hostColor: profile.color,
          maxPlayers: maxP
        });
        window.location.search = `?lobby=${lid}`;
@@ -129,9 +136,20 @@ function setupLobbyBindings() {
    btnJoinLobby.addEventListener('click', async () => {
      const code = inputJoinCode.value.trim().toUpperCase();
      if(code.length !== 4) return;
-     const uName = localStorage.getItem('gh_username') || 'Guest';
+     
+     const profile = window.profileManager ? window.profileManager.getProfile() : { 
+       name: localStorage.getItem('gh_username') || generateRandomName(),
+       icon: localStorage.getItem('gh_usericon') || '👤',
+       color: '#252525'
+     };
+     
      try {
-       await joinLobby(code, { id: CLIENT_ID, name: uName });
+       await joinLobby(code, { 
+         id: CLIENT_ID, 
+         name: profile.name,
+         icon: profile.icon,
+         color: profile.color
+       });
        window.location.search = `?lobby=${code}`;
      } catch(e) {
        if(window.Notify) window.Notify.toast("Join Failed: " + e.message);
@@ -148,10 +166,7 @@ function setupLobbyBindings() {
 
 
 function initUser() {
-  const savedName = localStorage.getItem('gh_username');
-  if (savedName) {
-    displayUsername.innerText = savedName;
-  }
+  // Logic migrated to profile-manager.js
 }
 
 function setupListeners() {
@@ -229,36 +244,7 @@ function setupListeners() {
     renderCards();
   });
 
-  // Profile Modal
-  profileBtn.addEventListener('click', () => {
-    inputUsername.value = localStorage.getItem('gh_username') || '';
-    profileModal.classList.remove('hidden');
-  });
-
-  btnCloseProfile.addEventListener('click', () => {
-    profileModal.classList.remove('hidden');
-  });
-
-  btnSaveProfile.addEventListener('click', async () => {
-    let newName = inputUsername.value.trim();
-    
-    // Default to a new random name if completely cleared
-    if (!newName) {
-       newName = generateRandomName();
-       localStorage.setItem('gh_username', newName);
-    } else {
-       localStorage.setItem('gh_username', newName);
-    }
-
-    displayUsername.innerText = newName;
-    profileModal.classList.add('hidden');
-    
-    // Reactive Update to Firebase if currently locked in a Lobby
-    if (window.currentLobbyId) {
-       await updatePlayerName(window.currentLobbyId, window.CLIENT_ID, newName);
-    }
-  });
-
+  // Profile Modal logic migrated to profile-manager.js
 }
 
 function applyQuickFilter(type) {

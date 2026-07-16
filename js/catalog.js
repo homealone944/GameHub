@@ -36,8 +36,8 @@ export const GAMES_CATALOG = [
   //   maxPlayers: 1
   // },
   {
-    id: 'codenames',
-    title: 'Codenames',
+    id: 'codenames-duet',
+    title: 'Codenames Duet',
     icon: '🕵️',
     desc: 'Cooperative word deduction game.',
     tags: ['Local', 'Online', 'Co-op', 'Multiplayer'],
@@ -60,6 +60,15 @@ export const GAMES_CATALOG = [
     desc: 'Connect the dots to claim the most boxes.',
     tags: ['Local', 'Online', 'Multiplayer'],
     minPlayers: 2,
-    maxPlayers: 4
+    maxPlayers: 2
+  },
+  {
+    id: 'madlib',
+    title: 'MadLib',
+    icon: '📝',
+    desc: 'Fill in the blanks to create a funny story together.',
+    tags: ['Local'],
+    minPlayers: 1,
+    maxPlayers: 1
   }
 ];

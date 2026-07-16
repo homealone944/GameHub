@@ -59,40 +59,39 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: repeat(6, 1fr);
-  gap: 8px;
-  background-color: #2a3d66; /* Classic deep blue */
-  padding: 10px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  width: 420px;
-  height: 360px;
+  gap: 12px;
+  background-color: #2a3d66; 
+  padding: 15px;
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+  width: clamp(340px, 85vmin, 700px);
+  aspect-ratio: 7 / 6;
+  height: auto;
 }
 
 .c4-cell {
   background-color: #1a1a2e;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 100%;
+  aspect-ratio: 1/1;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+  box-shadow: inset 0 3px 8px rgba(0,0,0,0.6);
 }
 
 .red-disc {
-  background: radial-gradient(circle at 30% 30%, #ff5e62, #ff9966);
   border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  box-shadow: 0 4px 10px rgba(255,94,98,0.4);
+  width: 85%;
+  height: 85%;
+  /* Background and Shadow set dynamically via JS */
 }
 
 .yellow-disc {
-  background: radial-gradient(circle at 30% 30%, #f7d08a, #f7941d);
   border-radius: 50%;
-  width: 45px;
-  height: 45px;
-  box-shadow: 0 4px 10px rgba(247,208,138,0.4);
+  width: 85%;
+  height: 85%;
+  /* Background and Shadow set dynamically via JS */
 }
 
 .win-cell {

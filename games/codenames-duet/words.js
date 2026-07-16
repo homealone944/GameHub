@@ -1,6 +1,6 @@
 // Codenames Duet Word List
 //https://www.darktwinge.com/codenames-word-list/
-const DEFAULT_WORDS = [
+export const DEFAULT_WORDS = [
   "Ace", "Africa", "Agent", "Air", "Alarm", "Alien", "Amazon", "Ambulance", "America", "Anchor", "Angel", "Ant", "Antarctica", "Anthem", "Apple", "Apron", "Arm", "Armor", "Army", "Art", "Ash", "Astronaut", "Atlantis", "Attic", "Australia", "Avalanche", "Axe",
   
   "Baby", "Back", "Bacon", "Bait", "Ball", "Balloon", "Banana", "Band", "Bank", "Bar", "Barbecue", "Bark", "Bass", "Bat", "Bath", "Battery", "Battle", "Battleship", "Bay", "Beach", "Bead", "Beam", "Bean", "Bear", "Beard", "Beat", "Bed", "Bee", "Beer", "Beetle", "Bell", "Belt", "Bench", "Berry", "Bicycle", "Big Bang", "Big Ben", "Bikini", "Bill", "Biscuit", "Black Hole", "Blade", "Blimp", "Blind", "Blizzard", "Block", "Blood", "Blues", "Board", "Boil", "Bolt", "Bomb", "Bond", "Bone", "Bonsai", "Book", "Boom", "Boot", "Booth", "Boss", "Bottle", "Bow", "Bowl", "Bowler", "Box", "Boxer", "Brain", "Brass", "Bread", "Break", "Brick", "Bridge", "Brother", "Brush", "Bubble", "Buck", "Bucket", "Buffalo", "Bug", "Bugle", "Bulb", "Bun", "Bunk", "Butter", "Butterfly", "Button",

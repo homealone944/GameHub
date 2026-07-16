@@ -3,153 +3,75 @@
 /* The Board */
 .board {
   display: grid;
-  grid-template-columns: repeat(3, 100px);
-  grid-template-rows: repeat(3, 100px);
-  gap: 10px;
-  background-color: rgba(255, 255, 255, 0.05);
-  padding: 10px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
+  grid-template-columns: repeat(3, clamp(80px, 20vmin, 160px));
+  grid-template-rows: repeat(3, clamp(80px, 20vmin, 160px));
+  gap: 15px;
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
   margin: auto;
-  transform: scale(1);
-  transition: transform 0.2s;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .cell {
   background-color: var(--bg-card);
-  border-radius: 8px;
+  border-radius: 15px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 3.5rem;
-  font-weight: 800;
+  font-size: 5rem; /* Increased from 3.5rem */
+  font-weight: 900;
   cursor: pointer;
-  transition: background-color var(--transition-speed), transform var(--transition-speed);
+  transition: all 0.2s ease;
   user-select: none;
-  width: 100px;
-  height: 100px;
+  width: 100%; /* Uses grid-defined size now */
+  height: 100%;
+  aspect-ratio: 1/1;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .cell:hover:not(.occupied) {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
 }
 
 .cell:active:not(.occupied) {
   transform: scale(0.95);
 }
 
-.cell.x-mark {
-  color: var(--accent-coral);
-}
-
-.cell.o-mark {
-  color: var(--accent-mint);
-}
-
+/* Win Highlighting */
 .cell.win-cell {
-  background-color: rgba(255, 255, 255, 0.15);
-  animation: pulse 1s infinite alternate;
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 20px rgba(255,255,255,0.1);
+  animation: fw-victory-pulse 1s infinite alternate;
 }
 
-@keyframes pulse {
-  from { transform: scale(1); }
-  to { transform: scale(1.05); }
+@keyframes fw-victory-pulse {
+  from { transform: scale(1); filter: brightness(1); }
+  to { transform: scale(1.05); filter: brightness(1.3); }
 }
 
 /* Mobile resizing */
 @media (max-width: 600px) {
   .board {
-    grid-template-columns: repeat(3, 80px);
-    grid-template-rows: repeat(3, 80px);
+    gap: 10px;
+    padding: 10px;
   }
   .cell { 
-    font-size: 2.5rem;
-    width: 80px;
-    height: 80px;
+    font-size: 3rem;
+    border-radius: 12px;
   }
 }
 
-/* Multi-player Seating UI */
-.role-badge {
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 4px;
-  letter-spacing: 1px;
-}
-.role-badge.playing-x { background: var(--accent-coral); color: white; }
-.role-badge.playing-o { background: var(--accent-mint); color: var(--bg-primary); }
-.role-badge.spectating { background: rgba(255,255,255,0.1); color: var(--text-secondary); }
-
-.seating-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.seat-slot {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.seat-slot label {
-  font-size: 0.65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  padding-left: 2px;
-}
-
-.seat-select {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: white;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s;
-}
-
-.seat-select:hover {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.2);
-}
-
-.seat-select:focus {
-  border-color: var(--accent-mint);
-  background: rgba(255,255,255,0.1);
-}
-
-#select-player-x:focus { border-color: var(--accent-coral); }
-#select-player-o:focus { border-color: var(--accent-mint); }
-
-/* Option styling for readability */
-.seat-select option {
-  background-color: var(--bg-card);
-  color: white;
-  padding: 10px;
-}
-
-.hidden-host-only {
-  display: none !important;
-}
-
-/* Compact specific for short screens */
+/* Orientation/Height optimization */
 @media (max-height: 750px) {
-  .status-bar-premium { margin-bottom: 0.5rem; padding: 5px 15px; }
   .board { transform: scale(0.9); }
-  .bottom-sheet.static .sheet-content { padding: 0.75rem 0.5rem; gap: 0.5rem; }
-  .sheet-btn { padding: 0.5rem; min-width: 120px; font-size: 0.8rem; }
-  #host-seating-section { margin-top: 0.5rem !important; }
 }
 
 @media (max-height: 650px) {
-  .board { transform: scale(0.8); }
+  .board { transform: scale(0.85); }
   .nav-game-title { font-size: 1rem; }
-  .game-header { height: 50px; }
+  .game-header { height: 52px; }
 }
