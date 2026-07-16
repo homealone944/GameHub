@@ -102,7 +102,7 @@
 
 /* Specific styling for the capture animation */
 .dab-box.captured::after {
-  content: '';
+  content: attr(data-initial);
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%) scale(0);
@@ -111,9 +111,6 @@
   color: rgba(255,255,255,0.8);
   animation: popLetter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
-
-.dab-box.captured.p1::after { content: '1'; }
-.dab-box.captured.p2::after { content: '2'; }
 
 @keyframes popLetter {
   0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }

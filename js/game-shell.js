@@ -8,7 +8,7 @@
 export class GameShell {
   static injectBaseShell() {
     const mount = document.getElementById('game-mount');
-    if (!mount) return;
+    if (!mount || mount.querySelector('.game-viewport')) return;
 
     const gameTitle = document.title.split('|')[0].trim();
     const hasCustomStatus = !!mount.querySelector('#game-status-bar');
@@ -19,10 +19,10 @@ export class GameShell {
         <!-- Premium Top Bar -->
         <header class="game-header">
           <div class="nav-left">
-            <a href="../../index.html" class="logo-text text-gradient" style="text-decoration:none;">
+            <button id="nav-btn-hub" class="logo-text text-gradient" style="border:none; cursor:pointer; padding:0; font-family:inherit;">
               <span class="logo-full">GameHub</span>
               <span class="logo-short">GH</span>
-            </a>
+            </button>
           </div>
           <div class="nav-center">
             <h2 class="nav-game-title">${gameTitle}</h2>
@@ -84,7 +84,7 @@ export class GameShell {
       </div>
 
       <!-- Pre-Game "Lobby" Modal -->
-      <div id="fw-pregame-modal" class="modal">
+      <div id="fw-pregame-modal" class="modal hidden">
         <div class="modal-content" style="max-width: 450px; padding: 2.5rem 2rem; position: relative;">
           <!-- Exit to Hub Button -->
           <button id="fw-btn-lobby-hub" class="btn-close" style="top: 1rem; left: 1rem; right: auto; font-size: 1.2rem; transform: scaleX(1.5);" title="Return to Hub">&lsaquo;</button>
@@ -123,6 +123,20 @@ export class GameShell {
              <button id="fw-btn-lobby-rules" class="btn btn-link" style="color: var(--text-secondary); font-weight: 600; opacity: 0.7; transition: opacity 0.2s;">
                 <span style="margin-right: 6px;">📖</span> View Game Rules
              </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirmation Modal -->
+      <div id="fw-confirm-modal" class="modal hidden" style="z-index: 12000;">
+        <div class="modal-content" style="max-width: 400px; padding: 2.5rem 2rem;">
+          <h2 id="fw-confirm-title" class="text-gradient" style="margin-bottom: 0.5rem; font-size: 1.8rem;">ARE YOU SURE?</h2>
+          <p id="fw-confirm-msg" style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
+            Action description goes here.
+          </p>
+          <div style="display: flex; gap: 1rem; width: 100%;">
+            <button id="fw-btn-confirm-cancel" class="btn btn-secondary w-100" style="padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">Cancel</button>
+            <button id="fw-btn-confirm-ok" class="btn btn-mint w-100" style="padding: 0.75rem;">Confirm</button>
           </div>
         </div>
       </div>
@@ -184,14 +198,23 @@ export class GameShell {
      const rulesBtn = document.getElementById('fw-btn-lobby-rules');
      const hubBtn = document.getElementById('fw-btn-lobby-hub');
 
-     if (!modal) return;
+     if (!modal) {
+        console.warn("[GameShell] fw-pregame-modal NOT FOUND");
+        return;
+     }
+     
+     console.log(`[GameShell] Showing PreGame Modal. isHost: ${isHost}, Current Classes: ${modal.className}`);
+     modal.classList.remove('hidden');
+     modal.style.display = 'flex'; // Force visibility
+     modal.style.opacity = '1';
+     modal.style.visibility = 'visible';
 
      if (isHost) {
-        hostControls.classList.remove('hidden');
-        guestControls.classList.add('hidden');
+        if (hostControls) hostControls.classList.remove('hidden');
+        if (guestControls) guestControls.classList.add('hidden');
      } else {
-        hostControls.classList.add('hidden');
-        guestControls.classList.remove('hidden');
+        if (hostControls) hostControls.classList.add('hidden');
+        if (guestControls) guestControls.classList.remove('hidden');
      }
 
      if (startBtn) startBtn.onclick = onStart;
@@ -207,5 +230,31 @@ export class GameShell {
 
   static hidePreGameModal() {
      document.getElementById('fw-pregame-modal')?.classList.add('hidden');
+  }
+
+  static showConfirmModal(title, msg, onConfirm) {
+     const modal = document.getElementById('fw-confirm-modal');
+     const titleEl = document.getElementById('fw-confirm-title');
+     const msgEl = document.getElementById('fw-confirm-msg');
+     const okBtn = document.getElementById('fw-btn-confirm-ok');
+     const cancelBtn = document.getElementById('fw-btn-confirm-cancel');
+     
+     if (!modal) return;
+     
+     if (titleEl) titleEl.innerText = title;
+     if (msgEl) msgEl.innerText = msg;
+     
+     okBtn.onclick = () => {
+        onConfirm();
+        this.hideConfirmModal();
+     };
+     cancelBtn.onclick = () => this.hideConfirmModal();
+     
+     modal.classList.remove('hidden');
+  }
+
+  static hideConfirmModal() {
+     const modal = document.getElementById('fw-confirm-modal');
+     if (modal) modal.classList.add('hidden');
   }
 }

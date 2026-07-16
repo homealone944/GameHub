@@ -1,4 +1,4 @@
-import { subscribeToLobby, updateGameState } from './database-manager.js';
+import { subscribeToLobby, updateGameState, setLobbyGame, leaveLobby } from './database-manager.js';
 import { GameShell } from './game-shell.js';
 
 
@@ -148,8 +148,9 @@ export class GameFramework {
   checkPreGameStatus() {
      if (!this.gameState) return;
      
-     // Only show the pre-game gate to the Host (Online) or any player (Local)
-     const shouldShowModal = !this.gameState.started && this.isHost();
+     // Show the pre-game setup modal to everyone if match hasn't started
+     const shouldShowModal = !this.gameState.started;
+     console.log(`[Framework] checkPreGameStatus. started: ${this.gameState.started}, shouldShow: ${shouldShowModal}`);
 
      if (shouldShowModal) {
         GameShell.showPreGameModal(
@@ -188,6 +189,7 @@ export class GameFramework {
      this.dom.settingsBtn = document.getElementById('btn-settings');
      this.dom.rulesBtn = document.getElementById('btn-rules');
      this.dom.playersBtn = document.getElementById('btn-players');
+     this.dom.navHubBtn = document.getElementById('nav-btn-hub');
      
      // Log errors if critical shell components are missing
      if (!this.dom.resetBtn) console.error("GameFramework: #btn-rematch not found in DOM");
@@ -314,14 +316,31 @@ export class GameFramework {
   returnToHub() {
     if (this.isOnline) {
       if (this.isHost()) {
-         // Synchronize navigation for everyone
-         const newState = { ...this.gameState, status: 'hub' };
-         this.commit(newState);
+         GameShell.showConfirmModal(
+            "RETURN TO HUB?",
+            "This will end the match for everyone and move the whole lobby back to the Hub. Are you sure?",
+            async () => {
+               window.isEndingGame = true; // Lock redirection logic
+               await setLobbyGame(this.lobbyId, "HUB");
+               window.location.href = '../../index.html' + (this.lobbyId ? `?lobby=${this.lobbyId}` : '');
+            }
+         );
       } else {
-          if (window.Notify) window.Notify.toast("Waiting for Host to return to Hub...");
+         GameShell.showConfirmModal(
+            "LEAVE MATCH?",
+            "Are you sure you want to leave this match and return to the Hub?",
+            async () => {
+               const uId = window.CLIENT_ID || localStorage.getItem('gh_clientId');
+               const pObj = window.currentLobbyData?.players?.find(p => p.id === uId);
+               if (pObj) {
+                  await leaveLobby(this.lobbyId, pObj);
+               }
+               window.location.href = '../../index.html';
+            }
+         );
       }
     } else {
-       window.location.href = '../../index.html';
+       window.location.href = '../../index.html' + (this.lobbyId ? `?lobby=${this.lobbyId}` : '');
     }
   }
 
@@ -369,6 +388,11 @@ export class GameFramework {
     const btnRulesOk = document.getElementById('btn-rules-ok');
     if (btnCloseRules) btnCloseRules.addEventListener('click', () => this.closeRulesModal());
     if (btnRulesOk) btnRulesOk.addEventListener('click', () => this.closeRulesModal());
+
+    // 6. Navigation
+    if (this.dom.navHubBtn) {
+       this.dom.navHubBtn.addEventListener('click', () => this.returnToHub());
+    }
   }
 
   toggleSheet(forceState) {
@@ -862,8 +886,17 @@ export class GameFramework {
     this.unsubscribe = subscribeToLobby(this.lobbyId, (data) => {
       if (!data) return;
       window.currentLobbyData = data;
+      
+      const isHost = this.isHost();
+      console.log(`[Framework] Lobby Snapshot. Host: ${isHost}, GameState: ${!!data.gameState}`);
+
       if (!data.gameState || !data.gameState.status) {
-        if (this.isHost()) this.initServerState(data);
+        if (isHost && data.currentGame !== 'STAGING' && data.currentGame !== 'HUB') {
+          console.log("[Framework] No game state found. I am host, initializing...");
+          this.initServerState(data);
+        } else {
+          console.log("[Framework] No game state found. I am guest, waiting for host...");
+        }
         return;
       }
       this.gameState = data.gameState;
@@ -887,7 +920,7 @@ export class GameFramework {
     state.teams = {};
     state.slots = [];
     
-    // Initialize default colors for FFA/Coop seats
+    // 1. Generate initial slots & teams based on seating config
     if (this.seating.archetype === 'ffa' || this.seating.archetype === 'coop') {
        const min = this.seating.minPlayers || 2;
        for (let i = 0; i < min; i++) {
@@ -895,6 +928,16 @@ export class GameFramework {
           const team = this.seating.archetype === 'coop' ? '_coop' : '_default';
           state.slots.push({ id: null, name: 'Waiting...', team, color: GameFramework.COLORS[colorIdx].name });
        }
+       if (this.seating.archetype === 'coop') {
+          state.teams['_coop'] = { name: this.seating.teamName || 'Team', color: this.seating.color || 'Mint' };
+       }
+    } else if (this.seating.archetype === 'teams') {
+       this.seating.teams.forEach(t => {
+          state.teams[t.id] = { name: t.name, color: t.color || 'Neutral' };
+          for (let i = 0; i < t.min; i++) {
+             state.slots.push({ id: null, name: 'Waiting...', team: t.id });
+          }
+       });
     }
 
     // 2. Auto-Assign available players (Randomized)
@@ -960,7 +1003,9 @@ export class GameFramework {
 
   isHost() {
     if (!this.isOnline) return true; // Local mode: everyone is the host
-    return window.currentLobbyData && window.currentLobbyData.hostId === window.CLIENT_ID;
+    const clientId = window.CLIENT_ID || localStorage.getItem('gh_clientId');
+    const isHost = window.currentLobbyData && window.currentLobbyData.hostId === clientId;
+    return !!isHost;
   }
 
   async handleAction(action) {
@@ -982,11 +1027,11 @@ export class GameFramework {
     const gameOver = this.engine.checkGameOver(newState, this.gameState.activeSlotIndex, this.mySlotIndex, this.isOnline);
     if (gameOver) {
        newState.status = 'finished';
-       newState.winner = gameOver.winner;
-       newState.winningLine = gameOver.winningLine;
-       newState.gameOverTitle = gameOver.title;
-       newState.gameOverSubtitle = gameOver.subtitle;
-       newState.glowColor = gameOver.glowColor;
+       newState.winner = gameOver.winner ?? null;
+       newState.winningLine = gameOver.winningLine ?? null;
+       newState.gameOverTitle = gameOver.title ?? null;
+       newState.gameOverSubtitle = gameOver.subtitle ?? null;
+       newState.glowColor = gameOver.glowColor ?? null;
     } else {
         // The engine is now responsible for updating activeSlotIndex.
         // We just check if it changed to trigger Pass the Phone.
@@ -1032,11 +1077,10 @@ export class GameFramework {
     this.gameState = state;
     if (this.isOnline && this.lobbyId) {
        await updateGameState(this.lobbyId, state);
-    } else {
-       // Local or Mock mode update
-       this.renderFrameworkUI();
-       if (this.ui && this.ui.render) this.ui.render(this.gameState, this);
     }
+    
+    this.renderFrameworkUI();
+    if (this.ui && this.ui.render) this.ui.render(this.gameState, this);
   }
 
   resetLocalGame(newConfig = null) {
@@ -1503,6 +1547,7 @@ export class GameFramework {
           }
        }
     }
+    this.checkPreGameStatus();
   }
 
   updateControls() {
@@ -1581,15 +1626,13 @@ export class GameFramework {
        const isMyWin = (this.mySlotIndex === winnerIndex) || 
                        (this.mySlotIndex !== null && this.gameState.slots[this.mySlotIndex]?.team === slotData.team);
 
-       title.innerText = this.gameState.gameOverTitle || (isMyWin ? "VICTORY" : "DEFEAT");
+       title.innerText = isMyWin ? "VICTORY" : "DEFEAT";
 
        const teamKey = slotData.team || '_default';
        const teamState = (this.gameState.teams && this.gameState.teams[teamKey]) || { name: 'Players', color: 'Neutral' };
        colorMeta = colors.find(c => c.name === teamState.color) || colors[0];
 
-       if (this.gameState.gameOverSubtitle) {
-          subtitle.innerHTML = this.gameState.gameOverSubtitle;
-       } else if (this.mySlotIndex === winnerIndex) {
+       if (this.mySlotIndex === winnerIndex) {
           subtitle.innerHTML = `You won the match! 🏆`;
        } else {
           subtitle.innerHTML = `<span style="color: ${colorMeta.value}; font-weight: 800;">${winnerName}</span> wins the match!`;
@@ -1603,7 +1646,7 @@ export class GameFramework {
     }
 
     const isMyWin = (winnerIndex === 'victory') || (this.mySlotIndex === winnerIndex) || 
-                    (this.mySlotIndex !== null && this.gameState.slots[this.mySlotIndex].team && this.gameState.slots[this.mySlotIndex].team === (this.gameState.slots[winnerIndex]?.team));
+                                         (this.mySlotIndex !== null && this.gameState.slots?.[this.mySlotIndex]?.team && this.gameState.slots?.[this.mySlotIndex]?.team === (this.gameState.slots?.[winnerIndex]?.team));
 
     const isAlreadyShowing = this.dom.gameOverOverlay.classList.contains('visible');
     if (!isAlreadyShowing && (isMyWin || this.mySlotIndex === null)) {

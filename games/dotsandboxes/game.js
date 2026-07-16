@@ -5,19 +5,18 @@ import { DotsAndBoxesEngine } from './engine.js';
 const framework = new GameFramework({
   gameId: 'dotsandboxes',
   seating: {
-    archetype: 'ffa',
+    archetype: 'teams',
     minPlayers: 2,
-    maxPlayers: 2
+    maxPlayers: 2,
+    teams: [
+      { id: 'p1', name: 'Player 1', min: 1, max: 1, color: 'Blue', symbol: 'P1' },
+      { id: 'p2', name: 'Player 2', min: 1, max: 1, color: 'Coral', symbol: 'P2' }
+    ]
   },
   engine: DotsAndBoxesEngine,
   hasLobby: false,
   ui: {
     render: (state, fw) => {
-      // Sync names from profile if it's the very first render and they are generic
-      if (!fw.isOnline && state.slots && state.slots[0] && state.slots[0].name === 'Player 1') {
-        const profile = JSON.parse(localStorage.getItem('gh_local_profile') || '{}');
-        if (profile.name) state.slots[0].name = profile.name;
-      }
 
       const scoreP1El = document.getElementById('score-p1');
       const scoreP2El = document.getElementById('score-p2');
@@ -93,7 +92,7 @@ function renderBoard(state, fw) {
   // 1. Draw Boxes
   for (let r = 0; r < rows - 1; r++) {
     for (let c = 0; c < cols - 1; c++) {
-      let boxState = state.boxes[r][c];
+      let boxState = state.boxes[r * (cols - 1) + c];
       const box = document.createElement('div');
       box.className = 'dab-box';
       box.style.left = `${c * widthPercUnit}%`;
@@ -106,6 +105,8 @@ function renderBoard(state, fw) {
         box.classList.add('captured');
         box.style.backgroundColor = `${color}44`; // 44 is hex alpha (approx 25%)
         box.style.setProperty('--box-color', color);
+        const playerSymbol = state.slots?.[boxState]?.name?.[0]?.toUpperCase() || (boxState === 0 ? '1' : '2');
+        box.dataset.initial = playerSymbol;
       }
       boardEl.appendChild(box);
     }
@@ -114,7 +115,7 @@ function renderBoard(state, fw) {
   // 2. Draw Horizontal Lines
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols - 1; c++) {
-      let lineState = state.hLines[r][c];
+      let lineState = state.hLines[r * (cols - 1) + c];
       const line = document.createElement('div');
       line.className = 'dab-line horizontal';
       line.style.left = `${c * widthPercUnit}%`;
@@ -140,7 +141,7 @@ function renderBoard(state, fw) {
   // 3. Draw Vertical Lines
   for (let r = 0; r < rows - 1; r++) {
     for (let c = 0; c < cols; c++) {
-      let lineState = state.vLines[r][c];
+      let lineState = state.vLines[r * cols + c];
       const line = document.createElement('div');
       line.className = 'dab-line vertical';
       line.style.left = `${c * widthPercUnit}%`;

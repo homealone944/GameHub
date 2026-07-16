@@ -37,11 +37,12 @@ export const TicTacToeEngine = {
           title = "GAME OVER";
           subtitle = `${symbol} WON!`;
         } else if (mySlotIndex !== null) {
+          const winnerSlot = state.slots?.[lastSlotIndex];
           if (mySlotIndex === lastSlotIndex) {
             title = "VICTORY";
             subtitle = "YOU WON";
           } else {
-            const winnerName = state.slots ? state.slots[lastSlotIndex].name : symbol;
+            const winnerName = winnerSlot?.name || symbol;
             title = "DEFEAT";
             subtitle = `${winnerName} WON!`;
           }

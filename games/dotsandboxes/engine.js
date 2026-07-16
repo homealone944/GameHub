@@ -13,9 +13,9 @@ export const DotsAndBoxesEngine = {
       cols,
       rows,
       scores: [0, 0],
-      hLines: Array(rows).fill(null).map(() => Array(cols - 1).fill(null)), // null = empty, 0/1 = player index
-      vLines: Array(rows - 1).fill(null).map(() => Array(cols).fill(null)),
-      boxes: Array(rows - 1).fill(null).map(() => Array(cols - 1).fill(null)),
+      hLines: Array(rows * (cols - 1)).fill(null), // null = empty, 0/1 = player index
+      vLines: Array((rows - 1) * cols).fill(null),
+      boxes: Array((rows - 1) * (cols - 1)).fill(null),
       lastScored: null, // used for extra turn logic
       statusText: "Player 1's Turn"
     };
@@ -26,17 +26,20 @@ export const DotsAndBoxesEngine = {
     if (state.activeSlotIndex !== slotIndex) return null;
 
     const { type, r, c } = action;
+    const { rows, cols } = state;
     const newState = JSON.parse(JSON.stringify(state));
 
     // Validate Move
     if (type === 'h') {
-      if (r < 0 || r >= newState.rows || c < 0 || c >= newState.cols - 1) return null;
-      if (newState.hLines[r][c] !== null) return null;
-      newState.hLines[r][c] = slotIndex;
+      if (r < 0 || r >= rows || c < 0 || c >= cols - 1) return null;
+      const idx = r * (cols - 1) + c;
+      if (newState.hLines[idx] !== null) return null;
+      newState.hLines[idx] = slotIndex;
     } else if (type === 'v') {
-      if (r < 0 || r >= newState.rows - 1 || c < 0 || c >= newState.cols) return null;
-      if (newState.vLines[r][c] !== null) return null;
-      newState.vLines[r][c] = slotIndex;
+      if (r < 0 || r >= rows - 1 || c < 0 || c >= cols) return null;
+      const idx = r * cols + c;
+      if (newState.vLines[idx] !== null) return null;
+      newState.vLines[idx] = slotIndex;
     } else {
       return null;
     }
@@ -45,16 +48,17 @@ export const DotsAndBoxesEngine = {
     let boxesCaptured = 0;
     
     const checkBox = (row, col) => {
-      if (row < 0 || row >= newState.rows - 1 || col < 0 || col >= newState.cols - 1) return false;
-      if (newState.boxes[row][col] !== null) return false;
+      if (row < 0 || row >= rows - 1 || col < 0 || col >= cols - 1) return false;
+      const boxIdx = row * (cols - 1) + col;
+      if (newState.boxes[boxIdx] !== null) return false;
       
-      const top = newState.hLines[row][col];
-      const bottom = newState.hLines[row + 1][col];
-      const left = newState.vLines[row][col];
-      const right = newState.vLines[row][col + 1];
+      const top = newState.hLines[row * (cols - 1) + col];
+      const bottom = newState.hLines[(row + 1) * (cols - 1) + col];
+      const left = newState.vLines[row * cols + col];
+      const right = newState.vLines[row * cols + col + 1];
       
       if (top !== null && bottom !== null && left !== null && right !== null) {
-        newState.boxes[row][col] = slotIndex;
+        newState.boxes[boxIdx] = slotIndex;
         return true;
       }
       return false;
@@ -68,19 +72,23 @@ export const DotsAndBoxesEngine = {
       if (checkBox(r, c)) boxesCaptured++;
     }
 
+    const activeName = (state.slots && state.slots[slotIndex]) ? state.slots[slotIndex].name : `Player ${slotIndex + 1}`;
+    const nextSlotIndex = slotIndex === 0 ? 1 : 0;
+    const nextName = (state.slots && state.slots[nextSlotIndex]) ? state.slots[nextSlotIndex].name : `Player ${nextSlotIndex + 1}`;
+
     if (boxesCaptured > 0) {
       newState.scores[slotIndex] += boxesCaptured;
-      newState.statusText = `Player ${slotIndex + 1} scored! Extra turn.`;
+      newState.statusText = `${activeName} scored! Extra turn.`;
       // Player keeps turn
     } else {
-      newState.activeSlotIndex = slotIndex === 0 ? 1 : 0;
-      newState.statusText = `Player ${newState.activeSlotIndex + 1}'s turn`;
+      newState.activeSlotIndex = nextSlotIndex;
+      newState.statusText = `${nextName}'s turn`;
     }
 
     // Check Win Condition
-    let totalBoxes = (newState.rows - 1) * (newState.cols - 1);
+    let totalBoxes = (rows - 1) * (cols - 1);
     let filledBoxes = 0;
-    newState.boxes.forEach(row => row.forEach(box => { if (box !== null) filledBoxes++; }));
+    newState.boxes.forEach(box => { if (box !== null) filledBoxes++; });
 
     if (filledBoxes === totalBoxes) {
       newState.status = 'finished';
@@ -94,12 +102,38 @@ export const DotsAndBoxesEngine = {
     return newState;
   },
 
-  checkGameOver: (state) => {
+  checkGameOver: (state, activeSlotIndex, mySlotIndex, isOnline) => {
     if (state.status === 'finished') {
+       if (state.winner === 'draw') {
+          return {
+             winner: 'draw',
+             title: "IT'S A DRAW!",
+             subtitle: "Both players were perfectly matched. 🤝"
+          };
+       }
+       
+       let title = "GAME OVER";
+       let subtitle = `Final Score: ${state.scores[0]} - ${state.scores[1]}`;
+       
+       if (isOnline && mySlotIndex !== null) {
+          if (mySlotIndex === state.winner) {
+             title = "VICTORY";
+             subtitle = `You won! Final Score: ${state.scores[0]} - ${state.scores[1]} 🏆`;
+          } else {
+             const winnerName = state.slots ? state.slots[state.winner].name : `Player ${state.winner + 1}`;
+             title = "DEFEAT";
+             subtitle = `${winnerName} won! Final Score: ${state.scores[0]} - ${state.scores[1]}`;
+          }
+       } else {
+          const winnerName = state.slots ? state.slots[state.winner].name : `Player ${state.winner + 1}`;
+          title = "GAME OVER";
+          subtitle = `${winnerName} WON! Final Score: ${state.scores[0]} - ${state.scores[1]}`;
+       }
+       
        return {
          winner: state.winner,
-         title: state.winner === 'draw' ? "IT'S A DRAW!" : `Game Over!`,
-         subtitle: state.winner === 'draw' ? "Both players were perfectly matched." : `Final Score: ${state.scores[0]} - ${state.scores[1]}`
+         title,
+         subtitle
        };
     }
     return null;

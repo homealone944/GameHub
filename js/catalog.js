@@ -60,6 +60,6 @@ export const GAMES_CATALOG = [
     desc: 'Connect the dots to claim the most boxes.',
     tags: ['Local', 'Online', 'Multiplayer'],
     minPlayers: 2,
-    maxPlayers: 4
+    maxPlayers: 2
   }
 ];

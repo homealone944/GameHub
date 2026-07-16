@@ -52,7 +52,7 @@ function initLobbyShell() {
     startGarbageCollector();
   }
 
-  if (LOBBY_ID && !isLocal) {
+  if (LOBBY_ID) {
     // Start Heartbeat for THIS lobby
     startHeartbeat();
     
