@@ -229,7 +229,13 @@ export class GameShell {
   }
 
   static hidePreGameModal() {
-     document.getElementById('fw-pregame-modal')?.classList.add('hidden');
+     const modal = document.getElementById('fw-pregame-modal');
+     if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = '';
+        modal.style.opacity = '';
+        modal.style.visibility = '';
+     }
   }
 
   static showConfirmModal(title, msg, onConfirm) {

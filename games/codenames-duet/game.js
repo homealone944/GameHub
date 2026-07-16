@@ -100,11 +100,14 @@ function renderBoard(state, fw) {
   let myIntelKey = null;
   const isFinished = state.status === 'finished' || state.revealAll;
 
-  if (!isFinished && state.phase === 'intel') {
+  if (!isFinished) {
      if (fw.isOnline) {
-        if (fw.mySlotIndex === state.activeSlotIndex) myIntelKey = (state.activeSlotIndex === 0 ? state.p1Key : state.p2Key);
+        if (fw.mySlotIndex === 0) myIntelKey = state.p1Key;
+        else if (fw.mySlotIndex === 1) myIntelKey = state.p2Key;
      } else {
-        myIntelKey = state.activeSlotIndex === 0 ? state.p1Key : state.p2Key;
+        if (state.phase === 'intel') {
+           myIntelKey = state.activeSlotIndex === 0 ? state.p1Key : state.p2Key;
+        }
      }
   }
 

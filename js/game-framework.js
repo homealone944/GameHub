@@ -174,6 +174,7 @@ export class GameFramework {
      
      if (this.isOnline) {
         this.commit(newState);
+        GameShell.hidePreGameModal();
      } else {
         this.gameState = newState;
         this.renderFrameworkUI();
@@ -967,7 +968,7 @@ export class GameFramework {
     state.slots = state.slots.map(slot => {
        if (available.length > 0) {
           const p = available.shift();
-          return { ...slot, id: p.id, name: p.name };
+          return { ...slot, id: p.id, name: p.name, icon: p.icon || '👤' };
        }
        return slot;
     });
@@ -980,7 +981,7 @@ export class GameFramework {
                 const currentInTeam = state.slots.filter(s => s.team === t.id).length;
                 if (currentInTeam >= (t.max || 99)) break;
                 const p = available.shift();
-                state.slots.push({ id: p.id, name: p.name, team: t.id });
+                state.slots.push({ id: p.id, name: p.name, team: t.id, icon: p.icon || '👤' });
              }
           });
        } else {
@@ -988,7 +989,7 @@ export class GameFramework {
           const max = this.seating.maxPlayers || 99;
           while (available.length > 0 && state.slots.length < max) {
              const p = available.shift();
-             state.slots.push({ id: p.id, name: p.name, team: groupKey });
+             state.slots.push({ id: p.id, name: p.name, team: groupKey, icon: p.icon || '👤' });
           }
        }
     }
@@ -1011,8 +1012,8 @@ export class GameFramework {
   async handleAction(action) {
     if (this.gameState.status === 'finished') return;
     if (this.isOnline) {
-       if (this.mySlotIndex !== this.gameState.activeSlotIndex) {
-          const expected = this.gameState.slots[this.gameState.activeSlotIndex].name;
+       if (this.gameState.activeSlotIndex !== null && this.mySlotIndex !== this.gameState.activeSlotIndex) {
+          const expected = this.gameState.slots[this.gameState.activeSlotIndex]?.name || "another player";
           if (window.Notify) window.Notify.toast(`It's not your turn! Waiting for ${expected}.`);
           return;
        }
@@ -1076,7 +1077,11 @@ export class GameFramework {
   async commit(state) {
     this.gameState = state;
     if (this.isOnline && this.lobbyId) {
-       await updateGameState(this.lobbyId, state);
+       try {
+          await updateGameState(this.lobbyId, state);
+       } catch (err) {
+          console.error("GameFramework: commit failed:", err);
+       }
     }
     
     this.renderFrameworkUI();
@@ -1126,11 +1131,13 @@ export class GameFramework {
     // 2. Local-only: Populate a fixed guest pool if no lobby exists
     if (!this.isOnline) {
        const profileName = localStorage.getItem('gh_username') || 'Guest';
+       const profileIcon = localStorage.getItem('gh_usericon') || '👤';
        const maxPossible = this.seating.maxPlayers || 8;
        this.localLobbyPlayers = [];
        for (let i = 1; i <= maxPossible; i++) {
           const name = i === 1 ? profileName : `Guest ${i - 1}`;
-          this.localLobbyPlayers.push({ id: `guest-${i}`, name: name, icon: '👤' });
+          const icon = i === 1 ? profileIcon : '👤';
+          this.localLobbyPlayers.push({ id: `guest-${i}`, name: name, icon: icon });
        }
     }
 
@@ -1157,7 +1164,12 @@ export class GameFramework {
     newState.slots = this.gameState.slots; 
     newState.teams = this.gameState.teams; 
     newState.status = 'playing';
-    newState.activeSlotIndex = 0;
+    
+    // Respect engine's initial activeSlotIndex if provided (e.g., null for Codenames Duet)
+    if (newState.activeSlotIndex === undefined) {
+       newState.activeSlotIndex = 0;
+    }
+    
     if (this.dom.gameOverOverlay) this.dom.gameOverOverlay.classList.remove('visible');
     this.gameOverDismissed = false;
     this.stopConfetti();
@@ -1256,7 +1268,7 @@ export class GameFramework {
     // 1. Clear player from any existing slot
     newState.slots = newState.slots.map(s => {
        if (s.id === playerId) {
-          return { ...s, id: null, name: 'Waiting...' };
+          return { ...s, id: null, name: 'Waiting...', icon: '👤' };
        }
        return s;
     });
@@ -1267,13 +1279,13 @@ export class GameFramework {
           // Elastic zone drop OR Virtual Placeholder
           const firstEmpty = newState.slots.findIndex(s => s.team === teamKey && s.id === null);
           if (firstEmpty !== -1) {
-             newState.slots[firstEmpty] = { id: playerId, name: player.name, team: teamKey };
+             newState.slots[firstEmpty] = { id: playerId, name: player.name, team: teamKey, icon: player.icon || '👤' };
           } else {
-             newState.slots.push({ id: playerId, name: player.name, team: teamKey });
+             newState.slots.push({ id: playerId, name: player.name, team: teamKey, icon: player.icon || '👤' });
           }
        } else {
           // Fixed slot drop
-          newState.slots[slotIndex] = { id: playerId, name: player.name, team: teamKey };
+          newState.slots[slotIndex] = { id: playerId, name: player.name, team: teamKey, icon: player.icon || '👤' };
        }
     }
 
@@ -1513,31 +1525,30 @@ export class GameFramework {
 
           if (this.gameState.activeSlotIndex === null) {
              this.dom.turnIndicator.classList.add('hidden');
-             return;
-          }
-
-          const activeSlot = this.gameState.slots[this.gameState.activeSlotIndex];
-          const isMyTurn = (this.mySlotIndex === this.gameState.activeSlotIndex);
-          const teamColor = this.getSlotColor(this.gameState.activeSlotIndex);
-          
-          const nameToDisplay = isMyTurn ? "YOUR" : `${activeSlot.name.toUpperCase()}'S`;
-          
-          // Look for a symbol (like X or O) in the team config
-          let symbolSuffix = "";
-          if (this.seating.archetype === 'teams' && activeSlot.team) {
-             const teamCfg = this.seating.teams.find(t => t.id === activeSlot.team);
-             if (teamCfg && teamCfg.symbol) {
-                symbolSuffix = ` (${teamCfg.symbol.toUpperCase()})`;
-             }
-          }
-          
-          this.dom.turnIndicator.classList.remove('text-gradient');
-          this.dom.turnIndicator.style.webkitTextFillColor = 'initial'; // Override transparent
-          
-          if (this.gameState.statusText) {
-             this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${this.gameState.statusText.toUpperCase()}</span>`;
           } else {
-             this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${nameToDisplay} TURN${symbolSuffix}</span>`;
+             const activeSlot = this.gameState.slots[this.gameState.activeSlotIndex];
+             const isMyTurn = (this.mySlotIndex === this.gameState.activeSlotIndex);
+             const teamColor = this.getSlotColor(this.gameState.activeSlotIndex);
+             
+             const nameToDisplay = isMyTurn ? "YOUR" : `${activeSlot.name.toUpperCase()}'S`;
+             
+             // Look for a symbol (like X or O) in the team config
+             let symbolSuffix = "";
+             if (this.seating.archetype === 'teams' && activeSlot.team) {
+                const teamCfg = this.seating.teams.find(t => t.id === activeSlot.team);
+                if (teamCfg && teamCfg.symbol) {
+                   symbolSuffix = ` (${teamCfg.symbol.toUpperCase()})`;
+                }
+             }
+             
+             this.dom.turnIndicator.classList.remove('text-gradient');
+             this.dom.turnIndicator.style.webkitTextFillColor = 'initial'; // Override transparent
+             
+             if (this.gameState.statusText) {
+                this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${this.gameState.statusText.toUpperCase()}</span>`;
+             } else {
+                this.dom.turnIndicator.innerHTML = `<span style="color: ${teamColor}; font-weight: 900;">${nameToDisplay} TURN${symbolSuffix}</span>`;
+             }
           }
           
           if (this.dom.gameOverOverlay) {

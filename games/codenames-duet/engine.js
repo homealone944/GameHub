@@ -88,6 +88,22 @@ export const CodenamesEngine = {
         if (newState.greensFound >= 15) {
           newState.status = 'finished';
           newState.winner = 'victory';
+        } else {
+          // Check if this player has found all remaining opposing agents
+          let opposingAgentsGuessed = 0;
+          for (let i = 0; i < 25; i++) {
+             if (opposingKey[i] === 1 && newState.revealed[i] === 'green') {
+                opposingAgentsGuessed++;
+             }
+          }
+          if (opposingAgentsGuessed >= 9) {
+             if (newState.turnsLeft <= 0) {
+                newState.status = 'finished';
+                newState.winner = 'timeout';
+             } else {
+                return transitionToIntel(newState, slotIndex);
+             }
+          }
         }
       } else { // Bystander
         if (newState.revealed[index] === null) {

@@ -58,7 +58,6 @@ const framework = new GameFramework({
 function renderBoard(state, fw) {
   const boardEl = document.getElementById('board');
   if (!boardEl) return;
-  boardEl.innerHTML = '';
   
   const { rows, cols } = state;
   const p1Color = fw.getSlotColor(0);
@@ -78,7 +77,7 @@ function renderBoard(state, fw) {
   boardEl.style.width = `${boardWidth}px`;
   boardEl.style.height = `${boardHeight}px`;
   boardEl.style.margin = '10px'; // Safety margin for edge dots/lines
-
+  
   if(!window._dabResizeBound) {
     window.addEventListener('resize', () => {
        if (framework.gameState) renderBoard(framework.gameState, framework);
@@ -89,89 +88,182 @@ function renderBoard(state, fw) {
   const widthPercUnit = 100 / boxesX;
   const heightPercUnit = 100 / boxesY;
   
-  // 1. Draw Boxes
-  for (let r = 0; r < rows - 1; r++) {
-    for (let c = 0; c < cols - 1; c++) {
-      let boxState = state.boxes[r * (cols - 1) + c];
-      const box = document.createElement('div');
-      box.className = 'dab-box';
-      box.style.left = `${c * widthPercUnit}%`;
-      box.style.top = `${r * heightPercUnit}%`;
-      box.style.width = `calc(${widthPercUnit}% + 1px)`;
-      box.style.height = `calc(${heightPercUnit}% + 1px)`;
-      
-      if (boxState !== null) {
-        const color = boxState === 0 ? p1Color : p2Color;
-        box.classList.add('captured');
-        box.style.backgroundColor = `${color}44`; // 44 is hex alpha (approx 25%)
-        box.style.setProperty('--box-color', color);
-        const playerSymbol = state.slots?.[boxState]?.name?.[0]?.toUpperCase() || (boxState === 0 ? '1' : '2');
-        box.dataset.initial = playerSymbol;
+  const expectedChildCount = (rows - 1) * (cols - 1) + rows * (cols - 1) + (rows - 1) * cols + rows * cols;
+  const needsBuild = boardEl.children.length !== expectedChildCount;
+
+  if (needsBuild) {
+    boardEl.innerHTML = '';
+    
+    // 1. Draw Boxes
+    for (let r = 0; r < rows - 1; r++) {
+      for (let c = 0; c < cols - 1; c++) {
+        const box = document.createElement('div');
+        box.className = 'dab-box';
+        box.dataset.r = r;
+        box.dataset.c = c;
+        box.style.left = `${c * widthPercUnit}%`;
+        box.style.top = `${r * heightPercUnit}%`;
+        box.style.width = `calc(${widthPercUnit}% + 1px)`;
+        box.style.height = `calc(${heightPercUnit}% + 1px)`;
+        
+        let boxState = state.boxes[r * (cols - 1) + c];
+        if (boxState !== null) {
+          const color = boxState === 0 ? p1Color : p2Color;
+          box.classList.add('captured');
+          box.style.backgroundColor = `${color}44`;
+          box.style.setProperty('--box-color', color);
+          const playerSymbol = state.slots?.[boxState]?.icon || state.slots?.[boxState]?.name?.[0]?.toUpperCase() || (boxState === 0 ? '👤' : '👥');
+          box.dataset.initial = playerSymbol;
+        }
+        boardEl.appendChild(box);
       }
-      boardEl.appendChild(box);
     }
-  }
-  
-  // 2. Draw Horizontal Lines
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols - 1; c++) {
-      let lineState = state.hLines[r * (cols - 1) + c];
-      const line = document.createElement('div');
-      line.className = 'dab-line horizontal';
-      line.style.left = `${c * widthPercUnit}%`;
-      line.style.top = `${r * heightPercUnit}%`;
-      line.style.width = `${widthPercUnit}%`;
-      
-      if (lineState !== null) {
-        const color = lineState === 0 ? p1Color : p2Color;
-        line.classList.add('claimed');
-        line.style.backgroundColor = color;
-        line.style.boxShadow = `0 0 8px ${color}`;
-      } else if (state.status === 'playing') {
+    
+    // 2. Draw Horizontal Lines
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols - 1; c++) {
+        const line = document.createElement('div');
+        line.className = 'dab-line horizontal';
+        line.dataset.r = r;
+        line.dataset.c = c;
+        line.style.left = `${c * widthPercUnit}%`;
+        line.style.top = `${r * heightPercUnit}%`;
+        line.style.width = `${widthPercUnit}%`;
+        
+        let lineState = state.hLines[r * (cols - 1) + c];
+        if (lineState !== null) {
+          const color = lineState === 0 ? p1Color : p2Color;
+          line.classList.add('claimed');
+          line.style.backgroundColor = color;
+          line.style.boxShadow = `0 0 8px ${color}`;
+        }
+        
         line.addEventListener('click', () => {
-           if ((fw.isOnline && fw.mySlotIndex === state.activeSlotIndex) || !fw.isOnline) {
+          if (framework.gameState && framework.gameState.status === 'playing') {
+            const isClaimed = line.classList.contains('claimed');
+            if (isClaimed) return;
+            if ((fw.isOnline && fw.mySlotIndex === framework.gameState.activeSlotIndex) || !fw.isOnline) {
               fw.handleAction({ type: 'h', r, c });
-           }
+            }
+          }
         });
+        boardEl.appendChild(line);
       }
-      boardEl.appendChild(line);
     }
-  }
-
-  // 3. Draw Vertical Lines
-  for (let r = 0; r < rows - 1; r++) {
-    for (let c = 0; c < cols; c++) {
-      let lineState = state.vLines[r * cols + c];
-      const line = document.createElement('div');
-      line.className = 'dab-line vertical';
-      line.style.left = `${c * widthPercUnit}%`;
-      line.style.top = `${r * heightPercUnit}%`;
-      line.style.height = `${heightPercUnit}%`;
-      
-      if (lineState !== null) {
-        const color = lineState === 0 ? p1Color : p2Color;
-        line.classList.add('claimed');
-        line.style.backgroundColor = color;
-        line.style.boxShadow = `0 0 8px ${color}`;
-      } else if (state.status === 'playing') {
+    
+    // 3. Draw Vertical Lines
+    for (let r = 0; r < rows - 1; r++) {
+      for (let c = 0; c < cols; c++) {
+        const line = document.createElement('div');
+        line.className = 'dab-line vertical';
+        line.dataset.r = r;
+        line.dataset.c = c;
+        line.style.left = `${c * widthPercUnit}%`;
+        line.style.top = `${r * heightPercUnit}%`;
+        line.style.height = `${heightPercUnit}%`;
+        
+        let lineState = state.vLines[r * cols + c];
+        if (lineState !== null) {
+          const color = lineState === 0 ? p1Color : p2Color;
+          line.classList.add('claimed');
+          line.style.backgroundColor = color;
+          line.style.boxShadow = `0 0 8px ${color}`;
+        }
+        
         line.addEventListener('click', () => {
-           if ((fw.isOnline && fw.mySlotIndex === state.activeSlotIndex) || !fw.isOnline) {
+          if (framework.gameState && framework.gameState.status === 'playing') {
+            const isClaimed = line.classList.contains('claimed');
+            if (isClaimed) return;
+            if ((fw.isOnline && fw.mySlotIndex === framework.gameState.activeSlotIndex) || !fw.isOnline) {
               fw.handleAction({ type: 'v', r, c });
-           }
+            }
+          }
         });
+        boardEl.appendChild(line);
       }
-      boardEl.appendChild(line);
     }
-  }
-
-  // 4. Draw Dots (on top)
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const dot = document.createElement('div');
-      dot.className = 'dab-dot';
-      dot.style.left = `${c * widthPercUnit}%`;
-      dot.style.top = `${r * heightPercUnit}%`;
-      boardEl.appendChild(dot);
+    
+    // 4. Draw Dots (on top)
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const dot = document.createElement('div');
+        dot.className = 'dab-dot';
+        dot.style.left = `${c * widthPercUnit}%`;
+        dot.style.top = `${r * heightPercUnit}%`;
+        boardEl.appendChild(dot);
+      }
+    }
+  } else {
+    // --- Update Existing DOM Elements ---
+    
+    // 1. Update Boxes
+    for (let r = 0; r < rows - 1; r++) {
+      for (let c = 0; c < cols - 1; c++) {
+        const box = boardEl.querySelector(`.dab-box[data-r="${r}"][data-c="${c}"]`);
+        if (box) {
+          let boxState = state.boxes[r * (cols - 1) + c];
+          if (boxState !== null) {
+            const color = boxState === 0 ? p1Color : p2Color;
+            const playerSymbol = state.slots?.[boxState]?.icon || state.slots?.[boxState]?.name?.[0]?.toUpperCase() || (boxState === 0 ? '👤' : '👥');
+            
+            if (!box.classList.contains('captured')) {
+              box.classList.add('captured');
+              box.style.backgroundColor = `${color}44`;
+              box.style.setProperty('--box-color', color);
+              box.dataset.initial = playerSymbol;
+            }
+          } else {
+            box.className = 'dab-box';
+            box.style.backgroundColor = 'transparent';
+            box.style.removeProperty('--box-color');
+            box.removeAttribute('data-initial');
+          }
+        }
+      }
+    }
+    
+    // 2. Update Horizontal Lines
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols - 1; c++) {
+        const line = boardEl.querySelector(`.dab-line.horizontal[data-r="${r}"][data-c="${c}"]`);
+        if (line) {
+          let lineState = state.hLines[r * (cols - 1) + c];
+          if (lineState !== null) {
+            const color = lineState === 0 ? p1Color : p2Color;
+            if (!line.classList.contains('claimed')) {
+              line.classList.add('claimed');
+              line.style.backgroundColor = color;
+              line.style.boxShadow = `0 0 8px ${color}`;
+            }
+          } else {
+            line.className = 'dab-line horizontal';
+            line.style.backgroundColor = '';
+            line.style.boxShadow = '';
+          }
+        }
+      }
+    }
+    
+    // 3. Update Vertical Lines
+    for (let r = 0; r < rows - 1; r++) {
+      for (let c = 0; c < cols; c++) {
+        const line = boardEl.querySelector(`.dab-line.vertical[data-r="${r}"][data-c="${c}"]`);
+        if (line) {
+          let lineState = state.vLines[r * cols + c];
+          if (lineState !== null) {
+            const color = lineState === 0 ? p1Color : p2Color;
+            if (!line.classList.contains('claimed')) {
+              line.classList.add('claimed');
+              line.style.backgroundColor = color;
+              line.style.boxShadow = `0 0 8px ${color}`;
+            }
+          } else {
+            line.className = 'dab-line vertical';
+            line.style.backgroundColor = '';
+            line.style.boxShadow = '';
+          }
+        }
+      }
     }
   }
 }
