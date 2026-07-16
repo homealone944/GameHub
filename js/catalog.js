@@ -17,24 +17,24 @@ export const GAMES_CATALOG = [
     minPlayers: 2,
     maxPlayers: 2
   },
-  // {
-  //   id: 'sudoku',
-  //   title: 'Sudoku',
-  //   icon: '🔢',
-  //   desc: 'A logic-based number placement puzzle.',
-  //   tags: ['Local', 'Solo', 'Coming Soon'],
-  //   minPlayers: 1,
-  //   maxPlayers: 1
-  // },
-  // {
-  //   id: 'solitaire',
-  //   title: 'Solitaire',
-  //   icon: '🃏',
-  //   desc: 'The classic solo card sorting game.',
-  //   tags: ['Local', 'Solo', 'Coming Soon'],
-  //   minPlayers: 1,
-  //   maxPlayers: 1
-  // },
+  {
+    id: 'sudoku',
+    title: 'Sudoku',
+    icon: '🔢',
+    desc: 'A logic-based number placement puzzle.',
+    tags: ['Local', 'Solo'],
+    minPlayers: 1,
+    maxPlayers: 1
+  },
+  {
+    id: 'solitaire',
+    title: 'Solitaire',
+    icon: '🃏',
+    desc: 'The classic solo card sorting game.',
+    tags: ['Local', 'Solo', 'Coming Soon'],
+    minPlayers: 1,
+    maxPlayers: 1
+  },
   {
     id: 'codenames-duet',
     title: 'Codenames Duet',
@@ -44,15 +44,24 @@ export const GAMES_CATALOG = [
     minPlayers: 2,
     maxPlayers: 2
   },
-  // {
-  //   id: 'cardsagainsthumanity',
-  //   title: 'Cards Against Humanity',
-  //   icon: '⬛⬜',
-  //   desc: 'A party game for horrible people.',
-  //   tags: ['Local', 'Online', 'Multiplayer', 'Coming Soon'],
-  //   minPlayers: 3,
-  //   maxPlayers: 10
-  // },
+  {
+    id: 'cardsagainsthumanity',
+    title: 'Cards Against Humanity',
+    icon: '⬛⬜',
+    desc: 'A party game for horrible people.',
+    tags: ['Local', 'Online', 'Multiplayer', 'Coming Soon'],
+    minPlayers: 3,
+    maxPlayers: 10
+  },
+  {
+    id: 'battleship',
+    title: 'Battle Ship',
+    icon: '🚢',
+    desc: 'Position your fleet and sink the enemy.',
+    tags: ['Local', 'Online', 'Multiplayer', 'Coming Soon'],
+    minPlayers: 2,
+    maxPlayers: 2
+  },
   {
     id: 'dotsandboxes',
     title: 'Dots & Boxes',
@@ -67,7 +76,16 @@ export const GAMES_CATALOG = [
     title: 'MadLib',
     icon: '📝',
     desc: 'Fill in the blanks to create a funny story together.',
-    tags: ['Local'],
+    tags: ['Local', "Solo"],
+    minPlayers: 1,
+    maxPlayers: 1
+  },
+  {
+    id: 'logicgrid',
+    title: 'Logic Grid',
+    icon: '🧩',
+    desc: 'Deduct the correct relationships using clues and a grid.',
+    tags: ['Local', 'Solo', 'Coming Soon'],
     minPlayers: 1,
     maxPlayers: 1
   }

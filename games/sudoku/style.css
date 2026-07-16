@@ -1,0 +1,356 @@
+/* games/sudoku/style.css */
+
+:root {
+  --cell-size: clamp(35px, 9vw, 55px);
+  --border-thick: 3px solid rgba(255, 255, 255, 0.7);
+  --border-thin: 1px solid rgba(255, 255, 255, 0.15);
+  --bg-selected: rgba(78, 205, 196, 0.25);
+  --bg-highlighted: rgba(255, 255, 255, 0.04);
+  --bg-box-highlighted: rgba(255, 255, 255, 0.08); /* More obvious selected box highlight */
+  --bg-same-number: rgba(78, 205, 196, 0.12);
+  --bg-conflict: rgba(255, 107, 107, 0.25);
+  --text-conflict: #ff6b6b;
+  --text-user: #4ecdc4;
+  --text-given: #ffffff;
+}
+
+#game-mount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 550px;
+  margin: 0 auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.sudoku-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 1. Setup Screen */
+.setup-container {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.setup-container h1 {
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+  letter-spacing: 4px;
+}
+
+.setup-subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+.difficulty-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+
+.diff-btn {
+  cursor: pointer;
+  display: block;
+  text-align: left;
+}
+
+.diff-btn input[type="radio"] {
+  display: none;
+}
+
+.diff-label {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 1.2rem;
+  transition: all 0.25s ease;
+}
+
+.diff-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.diff-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.diff-btn input[type="radio"]:checked + .diff-label {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.03);
+}
+
+.diff-btn input[type="radio"]:checked + .easy-label {
+  border-color: #4ecdc4;
+  color: #4ecdc4;
+}
+
+.diff-btn input[type="radio"]:checked + .medium-label {
+  border-color: #f9ca24;
+  color: #f9ca24;
+}
+
+.diff-btn input[type="radio"]:checked + .hard-label {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+
+/* 2. Stats Panel */
+.stats-panel {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 0.75rem 1.2rem;
+  margin-bottom: 1.2rem;
+  box-sizing: border-box;
+  font-size: 0.9rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-icon {
+  font-size: 1.1rem;
+}
+
+/* 3. Sudoku Grid */
+.board-wrapper {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1.2rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.sudoku-cell {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cell-size) * 0.45);
+  font-weight: 600;
+  user-select: none;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border-right: var(--border-thin);
+  border-bottom: var(--border-thin);
+}
+
+/* Thin outer borders */
+.sudoku-cell:nth-child(9n) {
+  border-right: none;
+}
+.sudoku-cell:nth-last-child(-n+9) {
+  border-bottom: none;
+}
+
+/* Thick 3x3 separators */
+.sudoku-cell.thick-right {
+  border-right: var(--border-thick);
+}
+.sudoku-cell.thick-bottom {
+  border-bottom: var(--border-thick);
+}
+
+/* Cell States */
+.sudoku-cell.given {
+  color: var(--text-given);
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.sudoku-cell.user-entered {
+  color: var(--text-user);
+}
+
+.sudoku-cell.highlighted {
+  background-color: var(--bg-highlighted);
+}
+
+.sudoku-cell.box-highlighted {
+  background-color: var(--bg-box-highlighted);
+}
+
+.sudoku-cell.same-number {
+  background-color: var(--bg-same-number);
+}
+
+.sudoku-cell.selected {
+  background-color: var(--bg-selected) !important;
+  outline: 3px solid var(--text-user) !important;
+  outline-offset: -3px;
+  z-index: 5;
+}
+
+.sudoku-cell.conflict {
+  background-color: var(--bg-conflict) !important;
+  color: var(--text-conflict) !important;
+}
+
+/* Pencil Notes inside Cell */
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 3px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.note-digit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cell-size) * 0.18);
+  font-weight: 500;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  line-height: 1;
+}
+
+/* 4. Controls Actions */
+.control-actions {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  margin-bottom: 1.2rem;
+  gap: 12px;
+}
+
+.control-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.6rem 0.4rem;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.control-icon {
+  font-size: 1.3rem;
+}
+
+#btn-notes.active {
+  background: rgba(78, 205, 196, 0.1);
+  border-color: #4ecdc4;
+  color: #4ecdc4;
+}
+
+#btn-notes.active #notes-mode-indicator {
+  color: #4ecdc4;
+  font-weight: 800;
+}
+
+.badge-off {
+  opacity: 0.5;
+}
+
+/* 5. Keypad */
+.number-keypad {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.key-btn {
+  aspect-ratio: 1 / 1;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: white;
+  font-size: 1.35rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.key-btn:hover {
+  background: rgba(78, 205, 196, 0.15);
+  border-color: #4ecdc4;
+  color: #4ecdc4;
+  transform: translateY(-2px);
+}
+
+.key-btn:active {
+  transform: translateY(0);
+  background: rgba(78, 205, 196, 0.3);
+}
+
+.key-btn.active {
+  background: rgba(78, 205, 196, 0.35) !important;
+  border-color: #4ecdc4 !important;
+  color: #4ecdc4 !important;
+  box-shadow: 0 0 12px rgba(78, 205, 196, 0.4);
+}
+
+.hidden {
+  display: none !important;
+}

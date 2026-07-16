@@ -338,27 +338,24 @@ function renderCards() {
 function renderCategorizedView() {
   hubContent.innerHTML = '';
   
-  // 1. Recommended (First 4)
-  renderSection("Recommended For You", GAMES_CATALOG.slice(0, 4));
+  // Filter out Coming Soon games for the main page categorized lists
+  const availableGames = GAMES_CATALOG.filter(g => !g.tags.includes('Coming Soon'));
+
+  // 1. Recommended (First 4 available games)
+  renderSection("Recommended For You", availableGames.slice(0, 4));
 
   // 2. Online Multiplayer
-  const onlineGames = GAMES_CATALOG.filter(g => g.tags.includes('Online'));
+  const onlineGames = availableGames.filter(g => g.tags.includes('Online'));
   renderSection("Online Party", onlineGames);
 
   // 3. Local Multiplayer
-  const localGames = GAMES_CATALOG.filter(g => g.tags.includes('Local'));
+  const localGames = availableGames.filter(g => g.tags.includes('Local'));
   renderSection("Local Rivalry", localGames);
 
   // 4. Single Player
-  const soloGames = GAMES_CATALOG.filter(g => g.tags.includes('Solo'));
+  const soloGames = availableGames.filter(g => g.tags.includes('Solo'));
   if (soloGames.length > 0) {
     renderSection("Single Player", soloGames);
-  }
-
-  // 5. Coming Soon
-  const comingSoon = GAMES_CATALOG.filter(g => g.tags.includes('Coming Soon'));
-  if (comingSoon.length > 0) {
-    renderSection("Coming Soon", comingSoon);
   }
 
   attachCardListeners();
@@ -411,6 +408,8 @@ function renderGridView() {
     let matchesCategory = true;
     if (activeFilters.category === 'Coming Soon') {
        matchesCategory = game.tags.includes('Coming Soon');
+    } else {
+       matchesCategory = !game.tags.includes('Coming Soon');
     }
     
     return matchesSearch && matchesMode && matchesPlayers && matchesCategory;

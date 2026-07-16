@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sudoku | GameHub</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../styles/global.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Game Mount Point -->
+  <div id="game-mount">
+    
+    <!-- 1. Difficulty Setup Phase -->
+    <div id="sudoku-setup-screen" class="sudoku-panel">
+      <div class="setup-container">
+        <h1 class="text-gradient">SUDOKU</h1>
+        <p class="setup-subtitle">Select your difficulty level to begin the puzzle.</p>
+        
+        <div class="difficulty-options">
+          <label class="diff-btn">
+            <input type="radio" name="difficulty" value="easy" checked>
+            <span class="diff-label easy-label">
+              <span class="diff-title">Easy</span>
+              <span class="diff-desc">38 starting numbers. Friendly for beginners.</span>
+            </span>
+          </label>
+          
+          <label class="diff-btn">
+            <input type="radio" name="difficulty" value="medium">
+            <span class="diff-label medium-label">
+              <span class="diff-title">Medium</span>
+              <span class="diff-desc">30 starting numbers. A moderate challenge.</span>
+            </span>
+          </label>
+          
+          <label class="diff-btn">
+            <input type="radio" name="difficulty" value="hard">
+            <span class="diff-label hard-label">
+              <span class="diff-title">Hard</span>
+              <span class="diff-desc">24 starting numbers. Requires advanced techniques.</span>
+            </span>
+          </label>
+        </div>
+
+        <button id="btn-start-sudoku" class="btn btn-mint w-100" style="padding: 1.2rem; font-weight: 800; font-size: 1.1rem; margin-top: 1.5rem; letter-spacing: 1px;">
+          START PUZZLE
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Main Sudoku Game Interface -->
+    <div id="sudoku-game-screen" class="sudoku-panel hidden">
+      <!-- Stats Panel -->
+      <div class="stats-panel">
+        <div class="stat-item">
+          <span class="stat-icon">📈</span>
+          <span id="stat-difficulty" style="text-transform: capitalize; font-weight: 700;">Medium</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">⚠️</span>
+          <span>Mistakes: <span id="stat-mistakes" style="font-weight: 700;">0/3</span></span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-icon">⏱️</span>
+          <span id="stat-timer" style="font-family: monospace; font-weight: 700; font-size: 1.1rem;">00:00</span>
+        </div>
+      </div>
+
+      <!-- Sudoku Board Wrapper -->
+      <div class="board-wrapper">
+        <div class="sudoku-grid" id="sudoku-grid">
+          <!-- 81 grid cells generated dynamically via JavaScript -->
+        </div>
+      </div>
+
+      <!-- Quick Control Actions -->
+      <div class="control-actions">
+        <button id="btn-undo" class="control-btn" title="Undo Last Move">
+          <div class="control-icon">↩️</div>
+          <div class="control-label">Undo</div>
+        </button>
+        
+        <button id="btn-erase" class="control-btn" title="Erase Cell Value">
+          <div class="control-icon">🧹</div>
+          <div class="control-label">Erase</div>
+        </button>
+        
+        <button id="btn-notes" class="control-btn" title="Toggle Pencil Notes (N)">
+          <div class="control-icon">✏️</div>
+          <div class="control-label">Notes: <span id="notes-mode-indicator" class="badge-off">OFF</span></div>
+        </button>
+      </div>
+
+      <!-- Keypad (Numbers 1 to 9) -->
+      <div class="number-keypad">
+        <button class="key-btn" data-val="1">1</button>
+        <button class="key-btn" data-val="2">2</button>
+        <button class="key-btn" data-val="3">3</button>
+        <button class="key-btn" data-val="4">4</button>
+        <button class="key-btn" data-val="5">5</button>
+        <button class="key-btn" data-val="6">6</button>
+        <button class="key-btn" data-val="7">7</button>
+        <button class="key-btn" data-val="8">8</button>
+        <button class="key-btn" data-val="9">9</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="../../js/notify.js"></script>
+  <script src="../../js/lobby-shell.js" type="module"></script>
+  <script src="game.js" type="module"></script>
+</body>
+</html>

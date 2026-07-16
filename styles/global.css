@@ -1906,3 +1906,70 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
   font-size: 0.75rem;
   margin-left: 8px;
 }
+
+/* Thin Footer Styling */
+.app-footer {
+  width: 100%;
+  padding: 1.25rem 2rem;
+  background: var(--bg-secondary);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: auto; /* Pushes footer to bottom */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--transition-speed);
+}
+
+.github-link:hover {
+  color: var(--text-primary);
+}
+
+.github-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.footer-divider {
+  color: rgba(255, 255, 255, 0.1);
+  user-select: none;
+}
+
+.footer-timestamp {
+  font-weight: 500;
+}
+
+#build-timestamp {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Status Dot Pulse Animation */
+@keyframes statusPulse {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.6; }
+}
+
+.status-dot-pinging {
+  animation: statusPulse 1.2s infinite ease-in-out;
+}

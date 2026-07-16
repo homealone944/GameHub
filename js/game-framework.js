@@ -1149,6 +1149,7 @@ export class GameFramework {
        : this.localLobbyPlayers;
        
     this.autoAssignPlayers(this.gameState, playersToAssign, false);
+    this.updateMySlot();
     
     // Note: We deliberately DO NOT force activeSlotIndex = 0 here anymore.
     // We let the engine's getInitialState value stand (e.g. null for Codenames).
