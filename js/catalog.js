@@ -61,5 +61,14 @@ export const GAMES_CATALOG = [
     tags: ['Local', 'Online', 'Multiplayer'],
     minPlayers: 2,
     maxPlayers: 2
+  },
+  {
+    id: 'madlib',
+    title: 'MadLib',
+    icon: '📝',
+    desc: 'Fill in the blanks to create a funny story together.',
+    tags: ['Local'],
+    minPlayers: 1,
+    maxPlayers: 1
   }
 ];

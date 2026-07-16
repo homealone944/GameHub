@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MadLib | GameHub</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../styles/global.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 
+    SLIM STANDARD: 
+    Individual games only provide their logic mount. 
+    The shared Shell (Header, Status Bar, Controls) is injected by lobby-shell.js
+  -->
+  <div id="game-mount">
+    <div class="madlib-container">
+      
+      <!-- Lobby Setup Card (Active during lobby phase) -->
+      <div id="lobby-card" class="madlib-card">
+        <h2 class="text-gradient" style="font-size: 2.2rem; font-weight: 900; margin-bottom: 2rem; letter-spacing: -1px; text-transform: uppercase;">Game Setup</h2>
+        
+        <div class="setup-group">
+          <label class="setup-label">Select Story</label>
+          <div class="setup-row">
+            <select id="lobby-story-select" class="setup-select w-100">
+              <!-- Dynamically populated -->
+            </select>
+            <button id="btn-random-story" class="btn btn-secondary" style="padding: 0 1.25rem; font-size: 1.2rem; border-radius: 14px;" title="Choose Random Story">🎲</button>
+          </div>
+        </div>
+
+        <div class="setup-group" style="margin-top: 1.5rem;">
+          <label class="setup-label">Turn Mode</label>
+          <select id="lobby-mode-select" class="setup-select w-100">
+            <option value="together">All Together (Single player or group screen)</option>
+            <option value="pass">Pass & Play (Divide prompts among players)</option>
+          </select>
+        </div>
+
+        <button id="btn-start-match" class="btn btn-mint w-100" style="margin-top: 2rem; padding: 1.25rem; font-weight: 900; font-size: 1.1rem; letter-spacing: 1px;">START GAME</button>
+      </div>
+
+      <!-- Prompt Card View (Active during setup phase) -->
+      <div id="prompt-card" class="madlib-card hidden">
+        <div class="card-progress">
+          Prompt <span id="current-prompt-number">1</span> of <span id="total-prompts-number">8</span>
+        </div>
+        
+        <div class="prompt-header">
+          <label for="prompt-input" id="prompt-label" class="text-gradient">Give a noun</label>
+        </div>
+        
+        <form id="prompt-form" class="prompt-form">
+          <input type="text" id="prompt-input" placeholder="Type your word here..." required maxlength="25" autocomplete="off">
+          <button type="submit" id="btn-submit-word" class="btn btn-mint w-100">Submit Word</button>
+        </form>
+      </div>
+
+      <!-- Story Reveal View (Active during story phase) -->
+      <div id="story-reveal" class="madlib-card hidden">
+        <h2 id="story-title" class="text-gradient story-title">The Story Title</h2>
+        <div id="story-text" class="story-body">
+          <!-- Story content with highlighted entries will be injected here -->
+        </div>
+        <button id="btn-end-game" class="btn btn-coral mt-2 w-100" style="padding: 1rem; font-weight: bold; margin-top: 1.5rem;">End Game</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../../js/notify.js"></script>
+  <script src="../../js/lobby-shell.js" type="module"></script>
+  <script src="game.js" type="module"></script>
+</body>
+</html>

@@ -1836,6 +1836,11 @@ h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.5rem; letter-spacing: -
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.fw-settings-select option {
+  background-color: #121214;
+  color: #ffffff;
+}
+
 .fw-settings-input:focus, .fw-settings-select:focus {
   outline: none;
   background: rgba(255,255,255,0.08);
