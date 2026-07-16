@@ -1012,7 +1012,8 @@ export class GameFramework {
   async handleAction(action) {
     if (this.gameState.status === 'finished') return;
     if (this.isOnline) {
-       if (this.gameState.activeSlotIndex !== null && this.mySlotIndex !== this.gameState.activeSlotIndex) {
+       const isStartAction = action.type === 'start' || action.type === 'startMatch';
+       if (!isStartAction && this.gameState.activeSlotIndex !== null && this.mySlotIndex !== this.gameState.activeSlotIndex) {
           const expected = this.gameState.slots[this.gameState.activeSlotIndex]?.name || "another player";
           if (window.Notify) window.Notify.toast(`It's not your turn! Waiting for ${expected}.`);
           return;
@@ -1091,6 +1092,7 @@ export class GameFramework {
   resetLocalGame(newConfig = null) {
     const config = newConfig || (this.gameState && this.gameState.config) || {};
     this.gameState = this.engine.getInitialState(config);
+    this.gameState.config = config; // Ensure config is persisted
     this.gameState.status = this.hasLobby ? 'waiting' : 'playing';
     this.gameState.started = !this.hasLobby; // Skip lobby if game doesn't need it
     this.gameState.teams = {};
@@ -1161,6 +1163,7 @@ export class GameFramework {
   resetOnlineGame(newConfig = null) {
     const config = newConfig || (this.gameState && this.gameState.config) || {};
     const newState = this.engine.getInitialState(config);
+    newState.config = config; // Ensure config is persisted
     newState.slots = this.gameState.slots; 
     newState.teams = this.gameState.teams; 
     newState.status = 'playing';
