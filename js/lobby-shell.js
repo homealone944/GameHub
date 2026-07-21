@@ -628,7 +628,7 @@ function injectGlobalProfile() {
   if (!document.getElementById('profile-modal')) {
     const modalHTML = `
       <div id="profile-modal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
           <h2>Edit User Profile</h2>
           <button class="btn-close" id="btn-close-profile">&times;</button>
           
@@ -647,6 +647,18 @@ function injectGlobalProfile() {
             <div id="avatar-customizer" class="customizer-panel">
               <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Select Icon</label>
               <div id="icon-selector" class="icon-grid"></div>
+            </div>
+
+            <!-- Local Players List Section -->
+            <div class="customizer-panel mt-2" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem; text-align: left;">
+              <label style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem; display: block; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">Local Players List</label>
+              <div id="local-players-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 120px; overflow-y: auto; margin-bottom: 0.75rem; background: rgba(0,0,0,0.1); padding: 0.5rem; border-radius: 8px;">
+                <!-- Dynamically populated -->
+              </div>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="input-local-player-name" placeholder="Add local player name..." maxlength="12" style="flex: 1; padding: 0.5rem; border-radius: 8px; background: var(--bg-card); color: white; border: 1px solid rgba(255,255,255,0.1); font-weight: 600;">
+                <button id="btn-add-local-player" class="btn btn-mint btn-sm" style="padding: 0.5rem 1rem;">Add</button>
+              </div>
             </div>
 
             <button id="btn-save-profile" class="btn btn-mint mt-2 w-100" style="padding: 1rem; font-weight: bold; font-size: 1rem;">Save Changes</button>

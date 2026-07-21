@@ -1134,12 +1134,37 @@ export class GameFramework {
     if (!this.isOnline) {
        const profileName = localStorage.getItem('gh_username') || 'Guest';
        const profileIcon = localStorage.getItem('gh_usericon') || '👤';
+       
+       let savedPlayers = [];
+       try {
+          savedPlayers = JSON.parse(localStorage.getItem('gh_local_players')) || [];
+       } catch (e) {
+          savedPlayers = [];
+       }
+
        const maxPossible = this.seating.maxPlayers || 8;
+       
+       // Cache the existing player names/icons so we don't lose custom renames on rematch
+       const existingNames = {};
+       const existingIcons = {};
+       if (this.localLobbyPlayers && this.localLobbyPlayers.length > 0) {
+          this.localLobbyPlayers.forEach(p => {
+             existingNames[p.id] = p.name;
+             existingIcons[p.id] = p.icon;
+          });
+       }
+
        this.localLobbyPlayers = [];
        for (let i = 1; i <= maxPossible; i++) {
-          const name = i === 1 ? profileName : `Guest ${i - 1}`;
-          const icon = i === 1 ? profileIcon : '👤';
-          this.localLobbyPlayers.push({ id: `guest-${i}`, name: name, icon: icon });
+          const guestId = `guest-${i}`;
+          let name = existingNames[guestId];
+          let icon = existingIcons[guestId];
+
+          if (!name) {
+             name = i === 1 ? profileName : (savedPlayers[i - 2] || `Guest ${i - 1}`);
+             icon = i === 1 ? profileIcon : '👤';
+          }
+          this.localLobbyPlayers.push({ id: guestId, name: name, icon: icon });
        }
     }
 

@@ -8,6 +8,12 @@ export class ProfileManager {
   constructor(isHub = true) {
     this.isHub = isHub;
     this.selectedIcon = localStorage.getItem('gh_usericon') || '👤';
+    this.localPlayers = [];
+    try {
+      this.localPlayers = JSON.parse(localStorage.getItem('gh_local_players')) || [];
+    } catch (e) {
+      this.localPlayers = [];
+    }
     this.dom = {};
   }
 
@@ -36,6 +42,11 @@ export class ProfileManager {
     this.dom.modalPreviewAvatar = document.getElementById('modal-avatar-preview');
     this.dom.avatarCustomizer = document.getElementById('avatar-customizer');
     this.dom.iconSelector = document.getElementById('icon-selector');
+    
+    // Local player additions
+    this.dom.localPlayersList = document.getElementById('local-players-list');
+    this.dom.inputLocalPlayerName = document.getElementById('input-local-player-name');
+    this.dom.btnAddLocalPlayer = document.getElementById('btn-add-local-player');
   }
 
   initUser() {
@@ -55,6 +66,7 @@ export class ProfileManager {
     }
 
     this.renderSelectors();
+    this.renderLocalPlayers();
   }
 
   renderSelectors() {
@@ -75,6 +87,58 @@ export class ProfileManager {
     }
   }
 
+  renderLocalPlayers() {
+    if (!this.dom.localPlayersList) return;
+    this.dom.localPlayersList.innerHTML = '';
+    
+    if (this.localPlayers.length === 0) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.style.color = 'var(--text-secondary)';
+      emptyMsg.style.fontSize = '0.85rem';
+      emptyMsg.style.padding = '0.5rem';
+      emptyMsg.style.fontStyle = 'italic';
+      emptyMsg.innerText = 'No local players added yet.';
+      this.dom.localPlayersList.appendChild(emptyMsg);
+      return;
+    }
+    
+    this.localPlayers.forEach((player, index) => {
+      const row = document.createElement('div');
+      row.style.display = 'flex';
+      row.style.justifyContent = 'space-between';
+      row.style.alignItems = 'center';
+      row.style.padding = '0.4rem 0.6rem';
+      row.style.background = 'rgba(255,255,255,0.05)';
+      row.style.borderRadius = '8px';
+      row.style.border = '1px solid rgba(255,255,255,0.05)';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.innerText = player;
+      nameSpan.style.fontWeight = '600';
+      nameSpan.style.color = 'white';
+      nameSpan.style.fontSize = '0.95rem';
+      
+      const btnRemove = document.createElement('button');
+      btnRemove.innerText = '×';
+      btnRemove.style.background = 'transparent';
+      btnRemove.style.border = 'none';
+      btnRemove.style.color = 'var(--accent-coral)';
+      btnRemove.style.fontSize = '1.3rem';
+      btnRemove.style.cursor = 'pointer';
+      btnRemove.style.fontWeight = 'bold';
+      btnRemove.style.padding = '0 0.5rem';
+      btnRemove.style.lineHeight = '1';
+      btnRemove.onclick = () => {
+        this.localPlayers.splice(index, 1);
+        this.renderLocalPlayers();
+      };
+      
+      row.appendChild(nameSpan);
+      row.appendChild(btnRemove);
+      this.dom.localPlayersList.appendChild(row);
+    });
+  }
+
   setupListeners() {
     if (this.dom.profileBtn) {
       if (!this.isHub) {
@@ -87,22 +151,61 @@ export class ProfileManager {
         this.selectedIcon = localStorage.getItem('gh_usericon') || '👤';
         this.selectedColor = localStorage.getItem('gh_usercolor') || '#252525';
         
+        try {
+          this.localPlayers = JSON.parse(localStorage.getItem('gh_local_players')) || [];
+        } catch (e) {
+          this.localPlayers = [];
+        }
+        
         if (this.dom.modalPreviewAvatar) {
           this.dom.modalPreviewAvatar.innerText = this.selectedIcon;
           this.dom.modalPreviewAvatar.style.backgroundColor = DEFAULT_AVATAR_COLOR;
         }
         
         this.renderSelectors();
+        this.renderLocalPlayers();
         this.dom.profileModal.classList.remove('hidden');
       });
     }
 
-    const closeProfile = () => this.dom.profileModal.classList.add('hidden');
+    const closeProfile = () => {
+      try {
+        this.localPlayers = JSON.parse(localStorage.getItem('gh_local_players')) || [];
+      } catch (e) {
+        this.localPlayers = [];
+      }
+      this.dom.profileModal.classList.add('hidden');
+    };
+    
     if (this.dom.btnCloseProfile) this.dom.btnCloseProfile.addEventListener('click', closeProfile);
 
     if (this.dom.profileModal) {
       this.dom.profileModal.addEventListener('click', (e) => {
         if (e.target === this.dom.profileModal) closeProfile();
+      });
+    }
+
+    if (this.dom.btnAddLocalPlayer) {
+      this.dom.btnAddLocalPlayer.addEventListener('click', (e) => {
+        e.preventDefault();
+        const newPlayerName = this.dom.inputLocalPlayerName.value.trim().substring(0, 12);
+        if (!newPlayerName) return;
+        
+        if (this.localPlayers.includes(newPlayerName)) {
+          if (window.Notify) window.Notify.toast("Player name already exists!");
+          return;
+        }
+        
+        this.localPlayers.push(newPlayerName);
+        this.dom.inputLocalPlayerName.value = '';
+        this.renderLocalPlayers();
+      });
+      
+      this.dom.inputLocalPlayerName.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.dom.btnAddLocalPlayer.click();
+        }
       });
     }
 
@@ -112,6 +215,7 @@ export class ProfileManager {
         
         localStorage.setItem('gh_username', newName);
         localStorage.setItem('gh_usericon', this.selectedIcon);
+        localStorage.setItem('gh_local_players', JSON.stringify(this.localPlayers));
 
         if (this.dom.displayUsername) this.dom.displayUsername.innerText = newName;
         if (this.dom.displayAvatar) {
