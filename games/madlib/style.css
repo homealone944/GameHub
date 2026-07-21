@@ -238,3 +238,19 @@
 .w-100 {
   width: 100%;
 }
+
+/* Mobile and Short Screen Optimizations */
+@media (max-width: 600px), (max-height: 750px) {
+  #game-mount {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding-bottom: 24px;
+    height: 100%;
+  }
+  .madlib-container {
+    margin: 0.5rem auto;
+  }
+  .status-bar-premium {
+    margin: 0.5rem auto !important;
+  }
+}

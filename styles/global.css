@@ -271,6 +271,17 @@ body:has(.game-viewport) {
   justify-content: center;
 }
 
+@media (max-width: 600px), (max-height: 750px) {
+  #game-mount {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding-bottom: 24px;
+  }
+  .status-bar-premium {
+    margin: 0.5rem auto !important;
+  }
+}
+
 /* Status Bar Premium */
 .status-bar-premium {
   width: calc(100% - 2rem); /* Full width minus margins */

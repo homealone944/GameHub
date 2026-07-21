@@ -159,6 +159,12 @@ function renderLog(state, fw) {
   const clueLogEl = document.getElementById('clue-log');
   if (!clueLogEl) return;
   clueLogEl.innerHTML = '';
+
+  const logViewport = document.querySelector('.log-viewport');
+  if (logViewport) {
+     logViewport.classList.toggle('hidden', state.log.length === 0);
+  }
+
   state.log.forEach(entry => {
     const el = document.createElement('div');
     el.className = `log-entry player${entry.player === 0 ? 1 : 2}-log`;

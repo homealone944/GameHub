@@ -354,3 +354,131 @@
 .hidden {
   display: none !important;
 }
+
+/* Mobile and Short Screen Optimizations */
+@media (max-width: 600px) {
+  #game-mount {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding: 0.5rem;
+    padding-bottom: 24px;
+    height: 100%;
+  }
+  .status-bar-premium {
+    margin: 0.5rem auto !important;
+    padding: 8px 12px;
+  }
+  
+  /* Setup screen */
+  .setup-container {
+    padding: 1.5rem 1.2rem;
+    border-radius: 20px;
+  }
+  .setup-container h1 {
+    font-size: 2.2rem;
+    letter-spacing: 2px;
+  }
+  .setup-subtitle {
+    margin-bottom: 1.2rem;
+    font-size: 0.85rem;
+  }
+  .difficulty-options {
+    gap: 8px;
+    margin-bottom: 1.2rem;
+  }
+  .diff-label {
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+  }
+  .diff-title {
+    font-size: 1rem;
+  }
+  .diff-desc {
+    font-size: 0.75rem;
+  }
+  #btn-start-sudoku {
+    margin-top: 1rem;
+    padding: 0.8rem;
+    font-size: 1rem;
+  }
+
+  /* Gameplay screen */
+  .stats-panel {
+    padding: 0.5rem 0.8rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.8rem;
+  }
+  .board-wrapper {
+    padding: 4px;
+    margin-bottom: 0.6rem;
+    border-radius: 12px;
+    max-width: min(100%, 48vh);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .control-actions {
+    margin-bottom: 0.6rem;
+    gap: 8px;
+  }
+  .control-btn {
+    padding: 0.4rem 0.2rem;
+    font-size: 0.75rem;
+    border-radius: 10px;
+  }
+  .control-icon {
+    font-size: 1.1rem;
+  }
+  .number-keypad {
+    gap: 4px;
+  }
+  .key-btn {
+    font-size: 1.15rem;
+    border-radius: 8px;
+  }
+}
+
+@media (max-height: 750px) {
+  #game-mount {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding: 0.5rem;
+    padding-bottom: 24px;
+    height: 100%;
+  }
+  .status-bar-premium {
+    margin: 0.5rem auto !important;
+  }
+  .setup-container {
+    padding: 1.2rem 1rem;
+  }
+  .setup-subtitle {
+    margin-bottom: 1rem;
+  }
+  .difficulty-options {
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+  .diff-label {
+    padding: 0.6rem 0.8rem;
+  }
+  #btn-start-sudoku {
+    margin-top: 0.8rem;
+    padding: 0.7rem;
+  }
+  .stats-panel {
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.6rem;
+  }
+  .board-wrapper {
+    margin-bottom: 0.5rem;
+    max-width: min(100%, 48vh);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .control-actions {
+    margin-bottom: 0.5rem;
+  }
+  .control-btn {
+    padding: 0.3rem 0.2rem;
+  }
+}

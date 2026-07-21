@@ -205,12 +205,84 @@
 
 /* Mobile Optimizations */
 @media (max-width: 600px) {
-  .board { gap: 8px; width: 98%; }
-  .card { font-size: 0.7rem; padding: 4px; aspect-ratio: 1.4 / 1; }
-  .log-viewport { padding: 6px; }
-  .clue-input-container { flex-direction: column; width: 90%; }
+  #game-mount {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding-bottom: 24px;
+  }
+  .status-bar-premium {
+    margin: 0.5rem auto !important;
+    padding: 8px 12px;
+  }
+  .board {
+    gap: 6px;
+    width: 98%;
+    margin: 0.5rem auto;
+  }
+  .card {
+    font-size: 0.75rem;
+    padding: 6px 4px;
+    aspect-ratio: 1.45 / 1;
+  }
+  .log-viewport {
+    padding: 6px;
+    margin: 0.5rem auto;
+    min-height: 120px;
+    height: 120px;
+  }
+  .log-entry {
+    height: 108px;
+    padding: 6px;
+  }
+  .log-clue {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+  .log-player {
+    font-size: 0.6rem;
+  }
+  .clue-input-container {
+    flex-direction: column;
+    width: 90%;
+    gap: 6px;
+    padding: 8px;
+  }
+  .phase-ui {
+    margin: 0.5rem 0;
+    min-height: 60px;
+  }
 }
 
 @media (max-height: 750px) {
-  .board { scale: 0.95; margin: 0.4rem auto; }
+  #game-mount {
+    justify-content: flex-start;
+    overflow-y: auto;
+    padding-bottom: 24px;
+  }
+  .status-bar-premium {
+    margin: 0.5rem auto !important;
+  }
+  .board {
+    margin: 0.5rem auto;
+  }
+  .log-viewport {
+    margin: 0.5rem auto;
+    min-height: 120px;
+    height: 120px;
+  }
+  .log-entry {
+    height: 108px;
+    padding: 6px;
+  }
+  .log-clue {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+  .log-player {
+    font-size: 0.6rem;
+  }
+  .phase-ui {
+    margin: 0.5rem 0;
+    min-height: 60px;
+  }
 }
