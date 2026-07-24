@@ -146,8 +146,11 @@ export class GameFramework {
 
     // 6. Dev Mode Check & Tools Button Visibility
     this.checkDevMode().then(isDev => {
-      if (this.dom.toolsBtn && (isDev || (this.engine && this.engine.getToolsHTML))) {
+      const hasTools = !!(this.engine && this.engine.getToolsHTML);
+      if (this.dom.toolsBtn && isDev && hasTools) {
         this.dom.toolsBtn.classList.remove('hidden');
+      } else if (this.dom.toolsBtn) {
+        this.dom.toolsBtn.classList.add('hidden');
       }
     });
   }
@@ -468,10 +471,17 @@ export class GameFramework {
 
     try {
       const root = window.getProjectRoot ? window.getProjectRoot() : '../../';
-      const res = await fetch(root + '.dev', { method: 'HEAD' }).catch(() => null);
-      if (res && (res.ok || res.status === 200)) {
-         window.isDevMode = true;
-         return true;
+      const res = await fetch(root + '.dev', { cache: 'no-store' }).catch(() => null);
+      if (res && res.ok) {
+         const contentType = res.headers.get('content-type') || '';
+         // Ignore HTML fallback pages sent by static hosts on 404s
+         if (!contentType.includes('text/html')) {
+            const text = await res.text().catch(() => '');
+            if (text.includes('dev=true')) {
+               window.isDevMode = true;
+               return true;
+            }
+         }
       }
     } catch(e) { /* ignore */ }
 
