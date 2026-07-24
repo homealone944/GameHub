@@ -64,9 +64,15 @@ body {
 }
 
 /* Force no-scroll when in a game */
+html:has(.game-viewport),
 body:has(.game-viewport) {
   overflow: hidden !important;
-  height: 100dvh;
+  height: 100vh !important;
+  height: 100dvh !important;
+  width: 100vw !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
 }
 
 /* Universal Game Layout Wrapper */
@@ -83,6 +89,7 @@ body:has(.game-viewport) {
 
 .game-header {
   height: 60px;
+  flex-shrink: 0 !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -232,6 +239,7 @@ body:has(.game-viewport) {
 
 .game-header {
   height: 60px;
+  flex-shrink: 0 !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -240,6 +248,14 @@ body:has(.game-viewport) {
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,0.05);
   z-index: 110;
+}
+
+@media (max-width: 600px) {
+  .game-header {
+    height: 52px;
+    padding: 0 1rem;
+    flex-shrink: 0 !important;
+  }
 }
 
 .game-body {
