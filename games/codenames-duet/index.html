@@ -40,9 +40,9 @@
           <div id="turns-dots" class="status-value" style="color: var(--accent-coral);">9</div>
         </div>
         <div class="status-divider"></div>
-        <div class="status-item" style="cursor: pointer;" id="btn-peek-all">
-          <div class="status-label">DEBUG</div>
-          <div class="status-value" style="font-size: 1.2rem;">👁️</div>
+        <div class="status-item" style="cursor: pointer;" id="btn-open-log" title="View Mission Log">
+          <div class="status-label">LOGS</div>
+          <div class="status-value" style="font-size: 1.1rem; display: flex; align-items: center; gap: 4px;">📜 <span id="log-count-badge" style="font-size: 0.75rem; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 10px;">0</span></div>
         </div>
     </div>
 
@@ -71,9 +71,18 @@
        </div>
     </div>
 
-    <!-- Message/Log Area -->
-    <div class="log-viewport">
-       <div id="clue-log" class="log-scroll"></div>
+    <!-- Mission Logs Modal -->
+    <div id="duet-log-modal" class="modal hidden" style="z-index: 10005;">
+       <div class="modal-content text-left" style="max-width: 550px; max-height: 85vh; display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.75rem; margin-bottom: 1rem;">
+             <h2 class="text-gradient" style="margin: 0; font-size: 1.5rem;">📜 Mission Logs</h2>
+             <button class="btn-close" id="btn-close-log" style="position: static;">&times;</button>
+          </div>
+          <div id="clue-log-modal-body" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; min-height: 150px; max-height: 50vh; padding-right: 4px;">
+             <div id="clue-log" style="display: flex; flex-direction: column; gap: 0.75rem;"></div>
+          </div>
+          <button id="btn-log-modal-ok" class="btn btn-mint mt-2 w-100">Close</button>
+       </div>
     </div>
 
   </div>

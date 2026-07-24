@@ -85,79 +85,46 @@
   box-shadow: inset 0 0 0 3px #ef444488 !important;
 }
 
-/* Field Log Styling */
-.log-viewport {
+/* Field Log Styling (inside Modal) */
+#clue-log {
   width: 100%;
-  max-width: 900px; /* Match board width */
-  margin: 1.5rem auto;
-  background: rgba(0,0,0,0.2);
-  border-radius: 12px;
-  padding: 10px;
-  border: 1px solid rgba(255,255,255,0.05);
-  flex-shrink: 0;
-  min-height: 160px; /* Reserve space to prevent layout jumps */
-}
-
-.log-scroll {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding-bottom: 8px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
-}
-
-/* Custom Horizontal Scrollbar */
-.log-scroll::-webkit-scrollbar { height: 6px; }
-.log-scroll::-webkit-scrollbar-track { background: transparent; }
-.log-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
-.log-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.1); }
-
-.log-entry {
-  min-width: 150px;
-  height: 180px; /* Fixed height to allow inner scrolling */
-  background: var(--bg-secondary);
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 0.8rem;
   display: flex;
   flex-direction: column;
-  border-top: 3px solid #666;
-  flex-shrink: 0;
+  gap: 12px;
 }
 
-.player1-log { border-top-color: #3b82f6; }
-.player2-log { border-top-color: #ef4444; }
+.log-entry {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  border-left: 4px solid #666;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
 
-.log-player { font-weight: 800; font-size: 0.65rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 2px; }
-.log-clue { font-weight: 900; font-size: 1rem; color: var(--text-primary); margin-bottom: 8px; flex-shrink: 0; }
+.player1-log { border-left-color: #3b82f6; }
+.player2-log { border-left-color: #ef4444; }
+
+.log-player { font-weight: 800; font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 4px; }
+.log-clue { font-weight: 900; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 8px; }
 
 .log-guesses { 
   display: flex; 
-  flex-direction: column; 
+  flex-wrap: wrap;
   gap: 6px; 
-  overflow-y: auto; 
-  flex: 1; 
-  padding-right: 4px;
-  /* Firefox Support */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 
-/* Custom Vertical Scrollbar */
-.log-guesses::-webkit-scrollbar { width: 4px; }
-.log-guesses::-webkit-scrollbar-track { background: transparent; }
-.log-guesses::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
-.log-guesses::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
-
 .guess-pill {
-  padding: 5px 10px;
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
   text-align: center;
-  width: 100%;
 }
 .guess-agent { background: #10b981; color: #064e3b; }
 .guess-assassin { background: #ef4444; color: #fff; }

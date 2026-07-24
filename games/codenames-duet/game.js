@@ -72,15 +72,7 @@ const framework = new GameFramework({
          }
       }
 
-      // 3. Status/Peek Actions
-      const btnPeek = document.getElementById('btn-peek-all');
-      if (btnPeek) {
-         if (!btnPeek.onclick) btnPeek.onclick = () => fw.handleAction({ type: 'toggleReveal' });
-         btnPeek.style.background = state.revealAll ? "rgba(16, 185, 129, 0.2)" : "transparent";
-         btnPeek.style.borderRadius = "8px";
-      }
-
-      // 4. Render Log & Board
+      // 3. Render Log & Board
       renderLog(state, fw);
       renderBoard(state, fw);
     }
@@ -157,12 +149,20 @@ function renderBoard(state, fw) {
 
 function renderLog(state, fw) {
   const clueLogEl = document.getElementById('clue-log');
+  const logBadgeEl = document.getElementById('log-count-badge');
+  if (logBadgeEl) {
+    logBadgeEl.innerText = state.log ? state.log.length : 0;
+  }
   if (!clueLogEl) return;
   clueLogEl.innerHTML = '';
 
-  const logViewport = document.querySelector('.log-viewport');
-  if (logViewport) {
-     logViewport.classList.toggle('hidden', state.log.length === 0);
+  if (!state.log || state.log.length === 0) {
+    clueLogEl.innerHTML = `
+      <div style="text-align: center; color: var(--text-secondary); padding: 1.5rem 0; font-size: 0.9rem;">
+        No intel clues logged yet.
+      </div>
+    `;
+    return;
   }
 
   state.log.forEach(entry => {
@@ -186,8 +186,11 @@ function renderLog(state, fw) {
     `;
     clueLogEl.appendChild(el);
   });
-  // Auto-scroll to the furthest right as more clues come in
-  clueLogEl.scrollLeft = clueLogEl.scrollWidth;
+  
+  const modalBody = document.getElementById('clue-log-modal-body');
+  if (modalBody) {
+    modalBody.scrollTop = modalBody.scrollHeight;
+  }
 }
 
 /**
@@ -199,6 +202,21 @@ function setupUI() {
   const btnEndTurn = document.getElementById('btn-end-turn');
   const inputClueWord = document.getElementById('clue-word');
   const inputClueNum = document.getElementById('clue-num');
+
+  const btnOpenLog = document.getElementById('btn-open-log');
+  const btnCloseLog = document.getElementById('btn-close-log');
+  const btnLogOk = document.getElementById('btn-log-modal-ok');
+  const logModal = document.getElementById('duet-log-modal');
+
+  if (btnOpenLog && logModal) {
+    btnOpenLog.addEventListener('click', () => logModal.classList.remove('hidden'));
+  }
+  if (btnCloseLog && logModal) {
+    btnCloseLog.addEventListener('click', () => logModal.classList.add('hidden'));
+  }
+  if (btnLogOk && logModal) {
+    btnLogOk.addEventListener('click', () => logModal.classList.add('hidden'));
+  }
 
   if (btnStartGame) btnStartGame.addEventListener('click', () => {
     framework.handleAction({ type: 'start' });

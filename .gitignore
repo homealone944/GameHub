@@ -1,0 +1,9 @@
+# Environment and Developer flags
+.dev
+.dev-mode
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db

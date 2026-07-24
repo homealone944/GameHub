@@ -143,6 +143,13 @@ export class GameFramework {
 
     // 5. Initial Pre-Game Lobby Check
     this.checkPreGameStatus();
+
+    // 6. Dev Mode Check & Tools Button Visibility
+    this.checkDevMode().then(isDev => {
+      if (this.dom.toolsBtn && (isDev || (this.engine && this.engine.getToolsHTML))) {
+        this.dom.toolsBtn.classList.remove('hidden');
+      }
+    });
   }
 
   checkPreGameStatus() {
@@ -188,6 +195,8 @@ export class GameFramework {
      this.dom.selfRoleBadge = document.getElementById('self-role-badge');
      this.dom.resetBtn = document.getElementById('btn-rematch');
      this.dom.settingsBtn = document.getElementById('btn-settings');
+     this.dom.toolsBtn = document.getElementById('btn-tools');
+     this.dom.toolsModal = document.getElementById('fw-tools-modal');
      this.dom.rulesBtn = document.getElementById('btn-rules');
      this.dom.playersBtn = document.getElementById('btn-players');
      this.dom.navHubBtn = document.getElementById('nav-btn-hub');
@@ -377,6 +386,14 @@ export class GameFramework {
        });
     }
 
+    // 3.5. Tools Modal
+    if (this.dom.toolsBtn) {
+       this.dom.toolsBtn.addEventListener('click', () => {
+          this.openToolsModal();
+          this.toggleSheet(false); // Close sheet when opening tools
+       });
+    }
+
     // 4. Sheet Toggles
     const sheetOverlay = document.getElementById('sheet-overlay');
     const sheetClose = document.getElementById('sheet-header-close');
@@ -384,11 +401,16 @@ export class GameFramework {
     if (sheetOverlay) sheetOverlay.addEventListener('click', () => this.toggleSheet(false));
     if (sheetClose) sheetClose.addEventListener('click', () => this.toggleSheet());
 
-    // 5. Modal Close Listeners (Rules)
+    // 5. Modal Close Listeners (Rules & Tools)
     const btnCloseRules = document.getElementById('btn-close-rules');
     const btnRulesOk = document.getElementById('btn-rules-ok');
     if (btnCloseRules) btnCloseRules.addEventListener('click', () => this.closeRulesModal());
     if (btnRulesOk) btnRulesOk.addEventListener('click', () => this.closeRulesModal());
+
+    const btnCloseTools = document.getElementById('btn-close-tools');
+    const btnToolsOk = document.getElementById('btn-tools-ok');
+    if (btnCloseTools) btnCloseTools.addEventListener('click', () => this.closeToolsModal());
+    if (btnToolsOk) btnToolsOk.addEventListener('click', () => this.closeToolsModal());
 
     // 6. Navigation
     if (this.dom.navHubBtn) {
@@ -427,6 +449,75 @@ export class GameFramework {
   closeRulesModal() {
     const modal = document.getElementById('rules-modal');
     if (modal) modal.classList.add('hidden');
+  }
+
+  async checkDevMode() {
+    if (window.isDevMode !== undefined) return window.isDevMode;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('debug') || urlParams.get('dev') === 'true') {
+       window.isDevMode = true;
+       return true;
+    }
+
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+       window.isDevMode = true;
+       return true;
+    }
+
+    try {
+      const root = window.getProjectRoot ? window.getProjectRoot() : '../../';
+      const res = await fetch(root + '.dev', { method: 'HEAD' }).catch(() => null);
+      if (res && (res.ok || res.status === 200)) {
+         window.isDevMode = true;
+         return true;
+      }
+    } catch(e) { /* ignore */ }
+
+    window.isDevMode = false;
+    return false;
+  }
+
+  openToolsModal() {
+     const modal = document.getElementById('fw-tools-modal');
+     const contentBody = document.getElementById('tools-content-body');
+     if (!modal) return;
+
+     if (contentBody) {
+        if (this.engine && this.engine.getToolsHTML) {
+           contentBody.innerHTML = this.engine.getToolsHTML(this.gameState, this);
+        } else {
+           contentBody.innerHTML = `
+             <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; color: var(--text-secondary);">
+                <p style="margin: 0; font-size: 0.9rem;">🛠️ Dev Mode Active</p>
+                <p style="font-size: 0.8rem; margin-top: 4px; opacity: 0.7;">No game-specific debug tools available for this game.</p>
+             </div>
+           `;
+        }
+
+        // Bind data-tool-action handlers
+        const actionBtns = contentBody.querySelectorAll('[data-tool-action]');
+        actionBtns.forEach(btn => {
+           btn.onclick = () => {
+              const actionType = btn.getAttribute('data-tool-action');
+              let actionPayload = { type: actionType };
+              const payloadStr = btn.getAttribute('data-tool-payload');
+              if (payloadStr) {
+                 try { actionPayload = { ...actionPayload, ...JSON.parse(payloadStr) }; } catch(e) {}
+              }
+              this.handleAction(actionPayload);
+              setTimeout(() => this.openToolsModal(), 50);
+           };
+        });
+     }
+
+     modal.classList.remove('hidden');
+  }
+
+  closeToolsModal() {
+     const modal = document.getElementById('fw-tools-modal');
+     if (modal) modal.classList.add('hidden');
   }
 
   openSettingsModal() {

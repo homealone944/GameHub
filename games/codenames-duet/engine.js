@@ -33,6 +33,18 @@ export const CodenamesEngine = {
       ns.revealAll = !ns.revealAll;
       return ns;
     }
+    if (action.type === 'addTurns') {
+      const ns = JSON.parse(JSON.stringify(state));
+      ns.turnsLeft = (ns.turnsLeft || 0) + 3;
+      return ns;
+    }
+    if (action.type === 'forceWin') {
+      const ns = JSON.parse(JSON.stringify(state));
+      ns.greensFound = 15;
+      ns.status = 'finished';
+      ns.winner = 'victory';
+      return ns;
+    }
     if (state.status === 'finished') return null;
     const newState = { ...state, log: [...state.log] };
 
@@ -216,6 +228,28 @@ export const CodenamesEngine = {
       maxTurns: parseInt(formData.get('maxTurns')),
       customWords: cleanWordList
     };
+  },
+
+  getToolsHTML: (state = {}) => {
+    const isRevealed = !!state.revealAll;
+    return `
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button class="btn ${isRevealed ? 'btn-mint' : 'btn-secondary'}" data-tool-action="toggleReveal" style="display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; border-radius: 8px;">
+          <span>👁️ Peek All Key Cards</span>
+          <span style="font-weight: 800; font-size: 0.8rem;">${isRevealed ? 'ACTIVE (ON)' : 'OFF'}</span>
+        </button>
+
+        <button class="btn btn-secondary" data-tool-action="addTurns" style="display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; border-radius: 8px;">
+          <span>⏳ Add +3 Extra Turns</span>
+          <span style="font-weight: 800; font-size: 0.8rem;">${state.turnsLeft ?? 0} Left</span>
+        </button>
+
+        <button class="btn btn-coral" data-tool-action="forceWin" style="display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem; border-radius: 8px;">
+          <span>🏆 Instant Victory (Debug)</span>
+          <span style="font-weight: 800; font-size: 0.8rem;">WIN</span>
+        </button>
+      </div>
+    `;
   }
 };
 

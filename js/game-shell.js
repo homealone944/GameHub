@@ -71,6 +71,10 @@ export class GameShell {
               <span>⚙️</span>
               <span>Settings</span>
             </button>
+            <button id="btn-tools" class="sheet-btn hidden">
+              <span>🛠️</span>
+              <span>Tools</span>
+            </button>
             <button id="btn-rematch" class="sheet-btn" style="color: var(--accent-coral);">
               <span>🔄</span>
               <span>Reset</span>
@@ -151,6 +155,19 @@ export class GameShell {
             <!-- Content injected via Engine.getRulesHTML() -->
           </div>
           <button id="btn-rules-ok" class="btn btn-mint mt-2 w-100">Understood</button>
+        </div>
+      </div>
+
+      <!-- Developer Tools Modal -->
+      <div id="fw-tools-modal" class="modal hidden" style="z-index: 10002;">
+        <div class="modal-content text-left">
+          <h2 class="text-gradient">Developer Tools</h2>
+          <button class="btn-close" id="btn-close-tools">&times;</button>
+          
+          <div id="tools-content-body" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Content injected via Engine.getToolsHTML() or Framework -->
+          </div>
+          <button id="btn-tools-ok" class="btn btn-mint mt-2 w-100">Done</button>
         </div>
       </div>
     `;
