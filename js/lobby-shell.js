@@ -655,9 +655,9 @@ function injectGlobalProfile() {
               <div id="local-players-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 120px; overflow-y: auto; margin-bottom: 0.75rem; background: rgba(0,0,0,0.1); padding: 0.5rem; border-radius: 8px;">
                 <!-- Dynamically populated -->
               </div>
-              <div style="display: flex; gap: 0.5rem;">
-                <input type="text" id="input-local-player-name" placeholder="Add local player name..." maxlength="12" style="flex: 1; padding: 0.5rem; border-radius: 8px; background: var(--bg-card); color: white; border: 1px solid rgba(255,255,255,0.1); font-weight: 600;">
-                <button id="btn-add-local-player" class="btn btn-mint btn-sm" style="padding: 0.5rem 1rem;">Add</button>
+              <div style="display: flex; gap: 0.5rem; width: 100%; box-sizing: border-box;">
+                <input type="text" id="input-local-player-name" placeholder="Add local player name..." maxlength="12" style="flex: 1; min-width: 0; padding: 0.5rem 0.75rem; border-radius: 8px; background: var(--bg-card); color: white; border: 1px solid rgba(255,255,255,0.1); font-weight: 600; box-sizing: border-box;">
+                <button id="btn-add-local-player" class="btn btn-mint btn-sm" style="flex-shrink: 0; padding: 0.5rem 1rem; white-space: nowrap;">Add</button>
               </div>
             </div>
 

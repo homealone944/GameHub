@@ -153,6 +153,22 @@ export class GameFramework {
         this.dom.toolsBtn.classList.add('hidden');
       }
     });
+
+    // 7. Lock document viewport scroll to top so mobile virtual keyboard blur doesn't push header off-screen
+    if (!window._ghScrollLockBound) {
+      window._ghScrollLockBound = true;
+      window.addEventListener('scroll', () => {
+        if (document.querySelector('.game-viewport') && window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      }, { passive: true });
+
+      document.addEventListener('focusout', (e) => {
+        if (document.querySelector('.game-viewport') && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+          setTimeout(() => window.scrollTo(0, 0), 50);
+        }
+      });
+    }
   }
 
   checkPreGameStatus() {
@@ -1111,6 +1127,7 @@ export class GameFramework {
   }
 
   async handleAction(action) {
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
     if (this.gameState.status === 'finished') return;
     if (this.isOnline) {
        const isStartAction = action.type === 'start' || action.type === 'startMatch';
@@ -1556,6 +1573,7 @@ export class GameFramework {
 
   renderFrameworkUI() {
     if (!this.gameState) return;
+    if (window.scrollY !== 0) window.scrollTo(0, 0);
 
     // Synced Hub Navigation (with Guard to prevent multiple redirect attempts)
     if (this.gameState.status === 'hub') {
