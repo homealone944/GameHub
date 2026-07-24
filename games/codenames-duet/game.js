@@ -165,7 +165,7 @@ function renderLog(state, fw) {
     return;
   }
 
-  state.log.forEach(entry => {
+  [...state.log].reverse().forEach(entry => {
     const el = document.createElement('div');
     el.className = `log-entry player${entry.player === 0 ? 1 : 2}-log`;
     const pName = state.slots[entry.player].name;
@@ -189,7 +189,7 @@ function renderLog(state, fw) {
   
   const modalBody = document.getElementById('clue-log-modal-body');
   if (modalBody) {
-    modalBody.scrollTop = modalBody.scrollHeight;
+    modalBody.scrollTop = 0;
   }
 }
 

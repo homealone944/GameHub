@@ -155,6 +155,7 @@
   padding: 10px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.08);
+  box-sizing: border-box;
 }
 
 .clue-input-container input {
@@ -165,17 +166,20 @@
   color: white;
   outline: none;
   font-weight: 600;
+  box-sizing: border-box;
 }
 .clue-input-container input:focus { border-color: var(--accent-mint); }
-#clue-word { width: 140px; }
-#clue-num { width: 60px; }
+#clue-word { width: 150px; }
+#clue-num { width: 60px; text-align: center; }
 
 /* Mobile Optimizations */
 @media (max-width: 600px) {
   #game-mount {
     justify-content: flex-start;
+    min-height: 100%;
     overflow-y: auto;
-    padding-bottom: 24px;
+    padding-bottom: 1rem;
+    box-sizing: border-box;
   }
   .status-bar-premium {
     margin: 0.5rem auto !important;
@@ -191,40 +195,43 @@
     padding: 6px 4px;
     aspect-ratio: 1.45 / 1;
   }
-  .log-viewport {
-    padding: 6px;
-    margin: 0.5rem auto;
-    min-height: 120px;
-    height: 120px;
-  }
-  .log-entry {
-    height: 108px;
-    padding: 6px;
-  }
-  .log-clue {
-    font-size: 0.85rem;
-    margin-bottom: 4px;
-  }
-  .log-player {
-    font-size: 0.6rem;
-  }
   .clue-input-container {
-    flex-direction: column;
-    width: 90%;
-    gap: 6px;
-    padding: 8px;
+    display: grid;
+    grid-template-columns: 1fr 70px;
+    gap: 8px;
+    width: 95%;
+    max-width: 360px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  #clue-word {
+    grid-column: 1;
+    width: 100%;
+  }
+  #clue-num {
+    grid-column: 2;
+    width: 100%;
+  }
+  #btn-give-clue {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
   }
   .phase-ui {
-    margin: 0.5rem 0;
+    margin: auto 0;
+    padding: 1rem 0;
     min-height: 60px;
+    width: 100%;
   }
 }
 
 @media (max-height: 750px) {
   #game-mount {
     justify-content: flex-start;
+    min-height: 100%;
     overflow-y: auto;
-    padding-bottom: 24px;
+    padding-bottom: 1rem;
+    box-sizing: border-box;
   }
   .status-bar-premium {
     margin: 0.5rem auto !important;
@@ -232,24 +239,9 @@
   .board {
     margin: 0.5rem auto;
   }
-  .log-viewport {
-    margin: 0.5rem auto;
-    min-height: 120px;
-    height: 120px;
-  }
-  .log-entry {
-    height: 108px;
-    padding: 6px;
-  }
-  .log-clue {
-    font-size: 0.85rem;
-    margin-bottom: 4px;
-  }
-  .log-player {
-    font-size: 0.6rem;
-  }
   .phase-ui {
-    margin: 0.5rem 0;
+    margin: auto 0;
+    padding: 1rem 0;
     min-height: 60px;
   }
 }
